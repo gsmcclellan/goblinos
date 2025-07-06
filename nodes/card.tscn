@@ -1,0 +1,148 @@
+[gd_scene load_steps=5 format=3 uid="uid://b0hmw8mlcfrlo"]
+
+[ext_resource type="Script" uid="uid://cxhg1if0iosoo" path="res://scripts/cards/Card.cs" id="1_b2440"]
+[ext_resource type="Texture2D" uid="uid://co4iv8c4et158" path="res://assets/Spritesheet.png" id="2_wmqrx"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_b2440"]
+bg_color = Color(0.705474, 0.566541, 0.49552, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ya665"]
+bg_color = Color(0.22, 0.0242, 0.0242, 1)
+
+[node name="Card" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_b2440")
+
+[node name="CardArea" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 280.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_b2440")
+
+[node name="NamePanel" type="Panel" parent="CardArea"]
+layout_mode = 0
+offset_left = 3.0
+offset_top = 3.0
+offset_right = 202.0
+offset_bottom = 39.0
+scale = Vector2(0.768778, 0.970029)
+
+[node name="Name" type="Label" parent="CardArea/NamePanel"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 7.0
+offset_right = 235.0
+offset_bottom = 32.0
+text = "Card Name"
+
+[node name="Details" type="Panel" parent="CardArea"]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 219.0
+offset_right = 239.0
+offset_bottom = 325.0
+scale = Vector2(0.815941, 0.526298)
+
+[node name="Image" type="Panel" parent="CardArea"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 47.0
+offset_right = 198.0
+offset_bottom = 214.0
+scale = Vector2(0.77129, 0.978096)
+
+[node name="Sprite2D" type="Sprite2D" parent="CardArea/Image"]
+position = Vector2(94, 80)
+scale = Vector2(5, 5)
+texture = ExtResource("2_wmqrx")
+region_enabled = true
+region_rect = Rect2(511, 35, 14, 14)
+
+[node name="Stats" type="Panel" parent="CardArea"]
+layout_mode = 0
+offset_left = 157.0
+offset_top = 2.0
+offset_right = 197.0
+offset_bottom = 213.0
+
+[node name="Health" type="Panel" parent="CardArea/Stats"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 38.0
+offset_bottom = 38.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_ya665")
+
+[node name="Label" type="Label" parent="CardArea/Stats/Health"]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 6.0
+offset_right = 21.0
+offset_bottom = 29.0
+text = "99"
+
+[node name="Sprite2D" type="Sprite2D" parent="CardArea/Stats/Health"]
+position = Vector2(27, 18)
+texture = ExtResource("2_wmqrx")
+region_enabled = true
+region_rect = Rect2(715, 172, 14, 12)
+
+[node name="Armor" type="Panel" parent="CardArea/Stats"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 42.0
+offset_right = 38.0
+offset_bottom = 78.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_ya665")
+
+[node name="Label" type="Label" parent="CardArea/Stats/Armor"]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 6.0
+offset_right = 21.0
+offset_bottom = 29.0
+text = "99"
+
+[node name="Sprite2D" type="Sprite2D" parent="CardArea/Stats/Armor"]
+position = Vector2(27, 18)
+texture = ExtResource("2_wmqrx")
+region_enabled = true
+region_rect = Rect2(666, 69, 10, 14)
+
+[node name="Power" type="Panel" parent="CardArea/Stats"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 82.0
+offset_right = 38.0
+offset_bottom = 118.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_ya665")
+
+[node name="Label" type="Label" parent="CardArea/Stats/Power"]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 6.0
+offset_right = 21.0
+offset_bottom = 29.0
+text = "99"
+
+[node name="Sprite2D" type="Sprite2D" parent="CardArea/Stats/Power"]
+position = Vector2(27, 18)
+texture = ExtResource("2_wmqrx")
+region_enabled = true
+region_rect = Rect2(545, 137, 14, 14)
+
+[node name="PlayButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 100.0
+offset_top = -36.0
+offset_right = 141.0
+offset_bottom = -5.0
+text = "Play
+"
+
+[connection signal="pressed" from="PlayButton" to="." method="OnPlayButtonPressed"]

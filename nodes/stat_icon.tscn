@@ -1,0 +1,25 @@
+[gd_scene load_steps=3 format=3 uid="uid://xplqbnxqrwqx"]
+
+[ext_resource type="Texture2D" uid="uid://co4iv8c4et158" path="res://assets/Spritesheet.png" id="1_ya665"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ya665"]
+bg_color = Color(0.22, 0.0242, 0.0242, 1)
+
+[node name="StatIcon" type="Panel"]
+offset_right = 36.0
+offset_bottom = 36.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_ya665")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 6.0
+offset_right = 21.0
+offset_bottom = 29.0
+text = "99"
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(27, 18)
+texture = ExtResource("1_ya665")
+region_enabled = true
+region_rect = Rect2(715, 172, 14, 12)

@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://c0a2xftv60y3l"]
+
+[ext_resource type="Script" uid="uid://t6ibnog8b6hd" path="res://scripts/cards/CardSlot.cs" id="1_cvp14"]
+
+[node name="CardSlot" type="Panel"]
+custom_minimum_size = Vector2(250, 350)
+offset_right = 250.0
+offset_bottom = 350.0
+script = ExtResource("1_cvp14")

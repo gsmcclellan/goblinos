@@ -1,0 +1,41 @@
+{
+  "goblin": {
+    "CardName": "Goblin",
+    "MaxHealth": 10,
+    "MaxArmor": 0,
+    "Power": 5
+  },
+  "goblin_stabber": {
+    "CardName": "Goblin Stabber",
+    "MaxHealth": 10,
+    "MaxArmor": 0,
+    "Power": 12
+  },
+  "goblin_shielder": {
+    "CardName": "Goblin Shielder",
+    "MaxHealth": 10,
+    "MaxArmor": 5,
+    "Power": 5
+  },
+  "soldier": {
+    "CardName": "Soldier",
+    "MaxHealth": 20,
+    "MaxArmor": 10,
+    "Power": 6,
+    "IsEnemy": true
+  },
+  "guardsman": {
+    "CardName": "Guardsman",
+    "MaxHealth": 12,
+    "MaxArmor": 5,
+    "Power": 4,
+    "IsEnemy": true
+  },
+  "squire": {
+    "Cardname": "Squire",
+    "MaxHealth": 8,
+    "MaxArmor": 2,
+    "Power": 2,
+    "IsEnemy": true
+  }
+}

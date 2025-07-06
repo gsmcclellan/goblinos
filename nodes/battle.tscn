@@ -1,0 +1,94 @@
+[gd_scene load_steps=7 format=3 uid="uid://cy4jrd6h2knnt"]
+
+[ext_resource type="Script" uid="uid://dw384y3qscd2i" path="res://scripts/Battle/Battle.cs" id="1_gscff"]
+[ext_resource type="PackedScene" uid="uid://b2a35fcj8tkoe" path="res://nodes/card_row.tscn" id="2_gscff"]
+[ext_resource type="Script" uid="uid://bingaximpwi13" path="res://scripts/Battle/BattleManager.cs" id="3_gscff"]
+[ext_resource type="PackedScene" uid="uid://be8hm46t74snf" path="res://nodes/deck.tscn" id="4_ssy3x"]
+[ext_resource type="PackedScene" uid="uid://5yraic4bidl0" path="res://nodes/melee_cards.tscn" id="5_4p6dk"]
+[ext_resource type="Script" uid="uid://dbonjpux7hvd3" path="res://scripts/Battle/BattleUserInterface.cs" id="6_gscff"]
+
+[node name="Battle" type="Node2D"]
+script = ExtResource("1_gscff")
+
+[node name="PlayerCards" parent="." instance=ExtResource("2_gscff")]
+offset_left = 322.0
+offset_top = 784.0
+offset_right = 1437.0
+offset_bottom = 1064.0
+
+[node name="EnemyCards" parent="." instance=ExtResource("2_gscff")]
+offset_left = 317.0
+offset_top = 47.0
+offset_right = 1432.0
+offset_bottom = 327.0
+
+[node name="BattleManager" type="Node" parent="."]
+script = ExtResource("3_gscff")
+
+[node name="PlayerDeck" parent="." instance=ExtResource("4_ssy3x")]
+position = Vector2(1605, 766)
+
+[node name="PlayerDrawButton" type="Button" parent="PlayerDeck"]
+offset_left = 76.0
+offset_top = 200.0
+offset_right = 126.0
+offset_bottom = 231.0
+text = "Draw
+"
+
+[node name="MeleeCards" parent="." instance=ExtResource("5_4p6dk")]
+offset_left = 104.0
+offset_top = 381.0
+offset_right = 1704.0
+offset_bottom = 661.0
+
+[node name="BattleUI" type="Control" parent="." node_paths=PackedStringArray("_playerActionsRemainingValueLabel")]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("6_gscff")
+_playerActionsRemainingValueLabel = NodePath("ActionsRemainingValue")
+
+[node name="AddPlayerCard" type="Button" parent="BattleUI"]
+offset_left = 161.0
+offset_top = 864.0
+offset_right = 255.0
+offset_bottom = 895.0
+text = "Add Goblin"
+
+[node name="AddEnemyCard" type="Button" parent="BattleUI"]
+offset_left = 156.0
+offset_top = 116.0
+offset_right = 251.0
+offset_bottom = 147.0
+text = "Add Enemy
+"
+
+[node name="PassPlayerTurnButton" type="Button" parent="BattleUI"]
+offset_left = 1705.0
+offset_top = 316.0
+offset_right = 1789.0
+offset_bottom = 347.0
+text = "Pass Turn"
+
+[node name="ActionsRemainingLabel" type="Label" parent="BattleUI"]
+layout_mode = 0
+offset_left = 1639.0
+offset_top = 281.0
+offset_right = 1787.0
+offset_bottom = 304.0
+text = "Actions Remaining:"
+
+[node name="ActionsRemainingValue" type="Label" parent="BattleUI"]
+layout_mode = 0
+offset_left = 1794.0
+offset_top = 281.0
+offset_right = 1834.0
+offset_bottom = 304.0
+text = "0"
+
+[connection signal="pressed" from="PlayerDeck/PlayerDrawButton" to="." method="OnPlayerDrawButtonPressed"]
+[connection signal="pressed" from="BattleUI/AddPlayerCard" to="." method="OnAddGoblinButtonPressed"]
+[connection signal="pressed" from="BattleUI/AddEnemyCard" to="." method="OnAddEnemyButtonPressed"]
+[connection signal="pressed" from="BattleUI/PassPlayerTurnButton" to="." method="OnDoBattleButtonPressed"]
