@@ -94,17 +94,10 @@ public partial class Card : Control
     /* Lifecycle methods */
     public override void _Ready()
     {
-        SizeFlagsHorizontal = 0;
-        SizeFlagsVertical = 0;
-        CustomMinimumSize = new Vector2(GlobalSettings.CardWidth, GlobalSettings.CardHeight);
-        Size = CustomMinimumSize;
-        
         _InitializeBattleManager();
         _SetupSubscriptions();
         _InitializeUI();
         _UpdateUI();
-        
-        
     }
     
     public override void _EnterTree()
@@ -149,7 +142,7 @@ public partial class Card : Control
     private void _SetupSubscriptions()
     {
         // Update UI when PlayerActionsRemainingChanged fires - if no more actions, cards become unplayable
-        _playerActionsChangedSubscription = Callable.From(_UpdateUI);
+        _playerActionsChangedSubscription = Callable.From((int _, int _) => _UpdateUI());
         _battleManager.Connect("PlayerActionsRemainingChanged", _playerActionsChangedSubscription);
     }
 

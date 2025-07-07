@@ -43,7 +43,8 @@ public partial class CardRow : HBoxContainer, ICardContainer
     }
 
     public int CardCount => _cardSlots.Count(slot => slot.HasCard);
-
+    public bool CanAddCard => _cardSlots.Any(cardSlot => !cardSlot.HasCard);
+    
     public override void _Ready()
     {
         GD.Print("CardRow Ready");
@@ -73,10 +74,7 @@ public partial class CardRow : HBoxContainer, ICardContainer
         return false;
     }
 
-    public bool CanAddCard()
-    {
-        return _cardSlots.Any(cardSlot => !cardSlot.HasCard);
-    }
+    
 
     public void ClearCards(bool destroy = false)
     {
@@ -89,15 +87,26 @@ public partial class CardRow : HBoxContainer, ICardContainer
         return hasCard;
     }
 
-    public Card RemoveCard(Card card)
+    public bool IsEmpty()
     {
-        throw new NotImplementedException();
+        return _cardSlots.All(cardSlot => cardSlot.Card == null);
+    }
+
+    public void RemoveCard(Card card)
+    {
+        CardSlot cardSlot = _cardSlots.FirstOrDefault(cardSlot => cardSlot.Card == card);
+        if (cardSlot == null)
+            throw new Exception("Cannot remove card, not found");
+
+        cardSlot.RemoveCard();
     }
 
     public Card RemoveRandomCard(int number = 1)
     {
         var i = GD.RandRange(0, CardCount - 1);
-        return Cards.ElementAt(i);
+        var card = Cards.ElementAt(i);
+        RemoveCard(card);
+        return card;
     }
 }
 

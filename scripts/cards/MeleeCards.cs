@@ -1,25 +1,30 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Godot;
 
 namespace GoblinCardGame.scripts.cards;
 
 public partial class MeleeCards : CardContainer
 {
-    public void DoBattle()
+    public async Task DoBattle()
     {
-        // TODO - iterate / multiple rounds
-        DoBattleRoundAsync();
+        for (int i = 0; i < GlobalSettings.NumberOfCombatRounds; i++)
+        {
+            GD.Print($"Round {i + 1} of {GlobalSettings.NumberOfCombatRounds}");
+            await DoBattleRoundAsync();
+        }
     }
     
-    public async void DoBattleRoundAsync (float delaySeconds = 0.5f)
+    public async Task DoBattleRoundAsync (float delaySeconds = 0.5f)
     {
         var actedCards = new HashSet<Card>(); // if current card dies, get next card by iterating list until you find one that hasn't acted
         Card currentCard = null;
         do
         {
             currentCard = GetNext(currentCard);
+            
             if (currentCard == null)
                 throw new Exception("No current card - something went wrong");
             
@@ -38,8 +43,12 @@ public partial class MeleeCards : CardContainer
                     KillCard(target);
             }
             else
+            {
                 // Combat is over
+                GD.Print("No targets, combat over");
                 return;
+            }
+                
 
             // If current card has died, get first card in Cards which has not acted
             if (currentCard.Health < 0 || !Cards.Contains(currentCard))
@@ -60,8 +69,6 @@ public partial class MeleeCards : CardContainer
             return Cards[0];
         return Cards[Cards.IndexOf(card) + 1];
     }
-    
-    
 
     /**
      * Returns target for melee, either closest left or right card, if they exist (randomly selected if both) or null
@@ -99,10 +106,21 @@ public partial class MeleeCards : CardContainer
         return cardOnRight; // Hits right or null
     }
 
-    private Card KillCard(Card card)
+    private void KillCard(Card card)
     {
-        RemoveChild(card);
-        Cards.Remove(card);
-        return card;
+        // Do animations
+        RemoveCard(card);
+        card.QueueFree();
+    }
+
+    public new void AddCard(Card card)
+    {
+        if (!CanAddCard) return;
+        card.CardName = $"({Cards.Count.ToString()}) {card.CardName}";
+        
+        
+        Cards.Add(card);
+        AddChild(card);
+        _UpdateCardPositions();
     }
 }

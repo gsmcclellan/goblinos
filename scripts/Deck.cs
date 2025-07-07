@@ -1,17 +1,18 @@
-using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using GoblinCardGame.scripts;
 using GoblinCardGame.scripts.cards;
+using Godot;
 using BattleManager = GoblinCardGame.scripts.Battle.BattleManager;
 using Card = GoblinCardGame.scripts.cards.Card;
+
+namespace GoblinCardGame.scripts;
 
 public partial class Deck : Node2D
 {
     /* Utility stuff */
-    private static readonly Random Random = new Random();
+    private static readonly Random Random = new();
     
     /* Node references */
     private BattleManager _battleManager;
@@ -38,8 +39,8 @@ public partial class Deck : Node2D
     {
         _battleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
         _shuffledCardCountLabel = GetNode<Label>("ShuffledCardCountLabel");
-        CreateStartingTestDeck();
-        ShuffleCards();
+        //CreateStartingTestDeck();
+        //ShuffleCards();
     }
 
     /** Creates cards from array of card data objects */
@@ -63,7 +64,7 @@ public partial class Deck : Node2D
     /** Shuffles cards & enables them to be drawn */
     public void ShuffleCards()
     {
-        var shuffledCardData = _masterCardList.OrderBy(el => Random.Next()).ToList();
+        var shuffledCardData = _masterCardList.OrderBy(_ => Random.Next()).ToList();
         var shuffledCards = new List<Card>();
         foreach (CardData cardData in shuffledCardData)
         {
@@ -82,6 +83,7 @@ public partial class Deck : Node2D
             _masterCardList.Add(goblinShielder);
             _masterCardList.Add(goblinStabber);
         }
+        ShuffleCards();
     }
 
     /** if any shuffled cards remain, return top card */
@@ -92,7 +94,7 @@ public partial class Deck : Node2D
             return Pop();
         }
         else
-            throw new System.Exception("No shuffled cards");
+            throw new Exception("No shuffled cards");
     }
     /** Sets shuffled cards from array of cards, assumed are already shuffled */
     private void SetShuffledCards(List<Card> cards)
@@ -118,5 +120,11 @@ public partial class Deck : Node2D
     {
         if (_shuffledCardCountLabel != null)
             _shuffledCardCountLabel.Text = $"{_shuffledCardCount}";
+    }
+
+    public void Cleanup()
+    {
+        foreach (var card in _shuffledCards)
+            card.QueueFree();
     }
 }

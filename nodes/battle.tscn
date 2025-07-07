@@ -91,4 +91,4 @@ text = "0"
 [connection signal="pressed" from="PlayerDeck/PlayerDrawButton" to="." method="OnPlayerDrawButtonPressed"]
 [connection signal="pressed" from="BattleUI/AddPlayerCard" to="." method="OnAddGoblinButtonPressed"]
 [connection signal="pressed" from="BattleUI/AddEnemyCard" to="." method="OnAddEnemyButtonPressed"]
-[connection signal="pressed" from="BattleUI/PassPlayerTurnButton" to="." method="OnDoBattleButtonPressed"]
+[connection signal="pressed" from="BattleUI/PassPlayerTurnButton" to="BattleUI" method="OnPlayerPassTurnButtonPressed"]

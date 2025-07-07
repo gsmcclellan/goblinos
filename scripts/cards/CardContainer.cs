@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Godot;
 using Godot.Collections;
@@ -6,7 +7,7 @@ namespace GoblinCardGame.scripts.cards;
 
 public partial class CardContainer : Control
 {
-    [Export] public int MaxCards = 10;
+    [Export] public int MaxCards = 20;
 
     public Array<Card> Cards { get; set; } = [];
 
@@ -20,7 +21,7 @@ public partial class CardContainer : Control
     /**
      * Recalculates position of cards in row so they overlap if necessary to all fit
      */
-    private void _UpdateCardPositions()
+    protected void _UpdateCardPositions()
     {
         
         Array<Card> cards = new Array<Card>(
@@ -68,5 +69,23 @@ public partial class CardContainer : Control
         Cards.Add(card);
         AddChild(card);
         _UpdateCardPositions();
+    }
+
+    public void RemoveCard(Card card)
+    {
+        if (!Cards.Contains(card)) 
+            throw new Exception("Card alredy removed");
+        Cards.Remove(card);
+        RemoveChild(card);
+        _UpdateCardPositions();
+    }
+    
+    public void ClearCards(bool destroy = false)
+    {
+        foreach (var card in Cards)
+        {
+            RemoveChild(card);
+            card.QueueFree();
+        }
     }
 }

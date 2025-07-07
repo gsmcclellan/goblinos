@@ -4,15 +4,16 @@ namespace GoblinCardGame.scripts.cards;
 
 public interface ICardContainer
 {
-    IEnumerable<Card> Cards { get; set; }
-    int CardCount { get; }
-    bool AddCard(Card card);
-    bool CanAddCard();
-
-    void ClearCards(bool destroy = false);
-
-    bool HasCard(Card card);
-    Card RemoveRandomCard(int number = 1);
-
-    Card RemoveCard(Card card);
+    /* Properties */
+    public IEnumerable<Card> Cards { get; set; }
+    public int CardCount { get; }
+    public bool CanAddCard { get; }
+    
+    /* Methods */
+    public bool AddCard(Card card);
+    public void ClearCards(bool destroy = false);
+    public bool HasCard(Card card);
+    public bool IsEmpty();
+    public Card RemoveRandomCard(int number = 1);
+    public void RemoveCard(Card card);
 }

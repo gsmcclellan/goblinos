@@ -13,7 +13,7 @@ public partial class CardSlot : Panel
 
     public override void _Ready()
     {
-        CustomMinimumSize = new Vector2(GlobalSettings.CardWidth, GlobalSettings.CardHeight);
+        CustomMinimumSize = new Vector2(GoblinCardGame.scripts.GlobalSettings.CardWidth, GoblinCardGame.scripts.GlobalSettings.CardHeight);
     }
 
     public Card AttachCard(Card card, bool destroyExistingCard = false)

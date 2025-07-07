@@ -8,6 +8,7 @@ public partial class Battle : Node2D
 {
     // Signals
     [Signal] public delegate void PlayerActionsRemainingChangedEventHandler(int oldValue, int newValue);
+    [Signal] public delegate void IsPlayerTurnChangedEventHandler(int isPlayerTurn);
     
     // Properties
     [Export] private NodePath _battleManagerPath = "BattleManager";
@@ -18,6 +19,7 @@ public partial class Battle : Node2D
     
 
     public BattleManager BattleManager;
+    public BattleUserInterface UserInterface;
     
     public ICardContainer PlayerHand;
     public ICardContainer EnemyHand;
@@ -25,9 +27,22 @@ public partial class Battle : Node2D
     public Deck PlayerDeck;
     public MeleeCards MeleeCards;
 
-    public bool IsPlayerTurn;
+    private bool _isPlayerTurn;
     private int _playerActionsRemaining;
 
+    public bool IsPlayerTurn
+    {
+        get => _isPlayerTurn;
+        set
+        {
+            bool oldValue = _isPlayerTurn;
+            _isPlayerTurn = value;
+            if (!value)
+                _playerActionsRemaining = 0;
+            if (value != oldValue)
+                EmitSignal(nameof(IsPlayerTurnChanged), value);
+        }
+    }
     public int PlayerActionsRemaining
     {
         get => _playerActionsRemaining;
@@ -42,10 +57,16 @@ public partial class Battle : Node2D
     public override void _Ready()
     {
         BattleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
+        UserInterface = GetNode<BattleUserInterface>(GlobalSettings.BattleUserInterfacePath);
         PlayerHand = GetNode<CardRow>(_playerHandPath);
         EnemyHand = GetNode<CardRow>(_enemyHandPath);
         PlayerDeck = GetNode<Deck>(_playerDeckPath);
         MeleeCards = GetNode<MeleeCards>(_meleeCardsPath);
+    }
+
+    public void _Init()
+    {
+        
     }
 
     public void OnPlayerDrawButtonPressed()
@@ -74,7 +95,7 @@ public partial class Battle : Node2D
     /** Adds card to player hand if able */
     public void AddPlayerCard(Card card)
     {
-        if (PlayerHand.CanAddCard())
+        if (PlayerHand.CanAddCard)
             PlayerHand.AddCard(card);
     }
 }

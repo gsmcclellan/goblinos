@@ -8,7 +8,7 @@ public partial class BattleUserInterface : Control
 
     [Export] private Label _playerActionsRemainingValueLabel;
 
-    public override void _Ready()
+    public void _Init()
     {
         _InitializeBattleComponents();
         _SetupSubscriptions();
@@ -41,5 +41,12 @@ public partial class BattleUserInterface : Control
     {
         if (_playerActionsRemainingValueLabel != null)
             _playerActionsRemainingValueLabel.Text = value.ToString();
+    }
+
+    public void OnPlayerPassTurnButtonPressed()
+    {
+        GD.Print("OnPlayerPassTurnButton pressed");
+
+        _battleManager.HandlePlayerPassTurn();
     }
 }

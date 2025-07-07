@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using GoblinCardGame.scripts.cards;
@@ -18,26 +19,44 @@ public partial class BattleManager : Node
     
     private Dictionary<string, CardData> _cardDataDict;
     
-    public bool CanDrawCard => Battle.PlayerDeck.HasShuffledCards && Battle.PlayerHand.CanAddCard();
+    public bool CanDrawCard => Battle.PlayerDeck.HasShuffledCards && Battle.PlayerHand.CanAddCard;
     public bool CanPlayCard => PlayerActionsRemaining > 0;
+    public bool EnemyHasCards => !Battle.EnemyHand.IsEmpty();
+
+    public bool IsPlayerTurn
+    {
+        get => Battle.IsPlayerTurn;
+        private set => Battle.IsPlayerTurn = value;
+    }
     
     public int PlayerActionsRemaining
     {
         get => Battle.PlayerActionsRemaining;
-        set => Battle.PlayerActionsRemaining = value;
+        private set => Battle.PlayerActionsRemaining = value;
+    }
+    
+    public override void _Ready()
+    {
+        CallDeferred(nameof(_DeferredInit));
     }
 
-    public override void _Ready()
+    private void _DeferredInit()
     {
         _InitializeBattleComponents();
         _InitializeCardDataDict();
         _SetupSubscriptions();
+        
         HandleStartOfBattle();
     }
 
     private void _InitializeBattleComponents()
     {
         Battle = GetParent() as Battle;
+        if (Battle == null)
+            throw new Exception("Battle component not found");
+        
+        Battle._Init();
+        Battle.UserInterface._Init();
     }
     
     private void _InitializeCardDataDict()
@@ -58,6 +77,17 @@ public partial class BattleManager : Node
         if (_cardDataDict != null) return;
         
         GD.PrintErr("Failed to parse card dictionary");
+    }
+    
+    public override void _Notification(int what)
+    {
+        if (what == NotificationExitTree)
+        {
+            Battle.MeleeCards.ClearCards(true);
+            Battle.PlayerHand.ClearCards(true);
+            Battle.EnemyHand.ClearCards(true);
+            Battle.PlayerDeck.Cleanup();
+        }
     }
 
     private void _SetupSubscriptions()
@@ -87,13 +117,40 @@ public partial class BattleManager : Node
         return Card(_cardDataDict[cardId]);
     }
 
-    public void DrawCard()
+    public void DoEnemyTurn(bool isFirstTurn = false)
     {
-        if (!CanDrawCard) return;
-        Battle.PlayerHand.AddCard(Battle.PlayerDeck.DrawCard());
+        var numCardsToPlay = Math.Min(isFirstTurn ? 1 : GlobalSettings.EnemyActionsPerTurn, Battle.EnemyHand.CardCount);
+
+        for (int i = 0; i < numCardsToPlay; i++)
+        {
+            if (Battle.EnemyHand.IsEmpty())
+                return;
+            
+            // Select card to play
+            var card = Battle.EnemyHand.RemoveRandomCard();
+            Battle.MeleeCards.AddCard(card);
+        }
+    }
+
+    public void HandlePlayerPassTurn()
+    {
+        // TODO - if actions remaining, do confirmation
+        IsPlayerTurn = false;
+
+        if (EnemyHasCards)
+        {
+            DoEnemyTurn();
+            HandleStartOfPlayerTurn();
+        }
+        else
+        {
+            ResolveCombatPhase();
+        }
+
+        
     }
     
-    public void PlayCard(Card card)
+    private void PlayCard(Card card)
     {
         if (!Battle.MeleeCards.CanAddCard) return;
         
@@ -103,23 +160,60 @@ public partial class BattleManager : Node
         PlayerActionsRemaining -= 1;
     }
 
-    public void DrawUntil(int num)
+    private void ResolveCombatPhase()
     {
-        while (Battle.PlayerHand.CardCount < num)
-        {
-            if (!CanDrawCard) return;
-            
-            
-        }
+        Battle.MeleeCards.DoBattle();
     }
 
+    public void DrawCard()
+    {
+        if (!CanDrawCard) return;
+        Battle.PlayerHand.AddCard(Battle.PlayerDeck.DrawCard());
+    }
+
+    public void DrawCards(int numCardsToDraw = 1)
+    {
+        for (int i = 0; i < numCardsToDraw; i++)
+            DrawCard();
+    }
+    /** Draws card until hand contains specified number, num not provided, draws until hand is full */
+    public void DrawUntil(int num = 0)
+    {
+        while (CanDrawCard && (Battle.PlayerHand.CardCount < num  || num == 0))
+        {
+            DrawCard();
+        }
+    }
     public void HandleStartOfBattle()
     {
-        var playerGoesFirst = true; // TODO GD.Randf() < 0.5f;
+        Battle.PlayerDeck.CreateStartingTestDeck(); // TODO - replace with loading deck from player's characters / party
+        DrawUntil(GlobalSettings.PlayerStartingCards);
+        CreateEnemyCards();
+        
+        var playerGoesFirst = GD.Randf() < 0.5f;
         GD.Print("Player goes first: " + playerGoesFirst);
-        PlayerActionsRemaining = playerGoesFirst ? 1: 0;
+        if (!playerGoesFirst)
+            DoEnemyTurn();
+        HandleStartOfPlayerTurn(playerGoesFirst);
+    }
+
+    public void HandleStartOfPlayerTurn(bool isFirstTurn = false)
+    {
+        IsPlayerTurn = true;
+        DrawCards(GlobalSettings.PlayerDrawCardsPerTurn);
+        if (EnemyHasCards)
+            PlayerActionsRemaining = isFirstTurn ? 1: GlobalSettings.PlayerActionsPerTurn;
+        else
+            PlayerActionsRemaining = Battle.PlayerHand.CardCount;
+
         
-        // Draw initial player cards
-        
+    }
+
+    private void CreateEnemyCards()
+    {
+        while (Battle.EnemyHand.CanAddCard)
+        {
+            Battle.EnemyHand.AddCard(Card("soldier"));
+        }
     }
 }
