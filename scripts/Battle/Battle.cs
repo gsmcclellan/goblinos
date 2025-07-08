@@ -1,6 +1,6 @@
-using GoblinCardGame.scripts.cards;
+using System.Threading.Tasks;
 using Godot;
-using Card = GoblinCardGame.scripts.cards.Card;
+using GoblinCardGame.scripts.cards;
 
 namespace GoblinCardGame.scripts.Battle;
 
@@ -54,6 +54,7 @@ public partial class Battle : Node2D
                 EmitSignal(nameof(PlayerActionsRemainingChanged), value, oldValue);
         }
     }
+    
     public override void _Ready()
     {
         BattleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
@@ -87,9 +88,9 @@ public partial class Battle : Node2D
         AddPlayerCard(BattleManager.Card("goblin"));
     }
 
-    public void OnDoBattleButtonPressed()
+    public async Task OnDoBattleButtonPressed()
     {
-        MeleeCards.DoBattle();
+        await BattleManager.ResolveCombatPhase();
     }
 
     /** Adds card to player hand if able */

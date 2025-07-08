@@ -33,6 +33,11 @@ public partial class Deck : Node2D
             UpdateShuffledCardCountLabel();
         }
     }
+    public IEnumerable<Card> Cards
+    {
+        get => _cards;
+        set => _cards = value.ToList();
+    }
     public bool HasShuffledCards => ShuffledCardCount > 0;
 
     public override void _Ready()
@@ -64,12 +69,14 @@ public partial class Deck : Node2D
     /** Shuffles cards & enables them to be drawn */
     public void ShuffleCards()
     {
-        var shuffledCardData = _masterCardList.OrderBy(_ => Random.Next()).ToList();
-        var shuffledCards = new List<Card>();
-        foreach (CardData cardData in shuffledCardData)
+        // var shuffledCardData = _masterCardList.OrderBy(_ => Random.Next()).ToList();
+        var shuffledCards = new List<Card>(_cards);
+        var n = shuffledCards.Count;
+        while (n > 1)
         {
-            Card card = _battleManager.Card(cardData);
-            shuffledCards.Add(card);
+            n--;
+            var randomIndex = GD.RandRange(0, n);
+            (shuffledCards[randomIndex], shuffledCards[n]) = (shuffledCards[n], shuffledCards[randomIndex]);
         }
         SetShuffledCards(shuffledCards);
     }
@@ -80,8 +87,12 @@ public partial class Deck : Node2D
         {
             CardData goblinShielder = _battleManager.CardData("goblin_shielder");
             CardData goblinStabber = _battleManager.CardData("goblin_stabber");
+            Card goblinShielderCard = _battleManager.Card("goblin_shielder");
+            Card goblinStabberCard = _battleManager.Card("goblin_stabber");
             _masterCardList.Add(goblinShielder);
             _masterCardList.Add(goblinStabber);
+            _cards.Add(goblinShielderCard);
+            _cards.Add(goblinStabberCard);
         }
         ShuffleCards();
     }
@@ -105,7 +116,7 @@ public partial class Deck : Node2D
     /** Removes & returns card at given index, defaults to zero */
     private Card RemoveShuffledCardAt(int index = 0)
     {
-        Card card = _shuffledCards[index];
+        var card = _shuffledCards[index];
         _shuffledCards.RemoveAt(index);
         ShuffledCardCount = _shuffledCards.Count;
         return card;
@@ -120,6 +131,15 @@ public partial class Deck : Node2D
     {
         if (_shuffledCardCountLabel != null)
             _shuffledCardCountLabel.Text = $"{_shuffledCardCount}";
+    }
+
+    public IEnumerable<Card> RemoveCards(bool destroy = false)
+    {
+        if (destroy)
+            Cleanup();
+        var cards = new List<Card>(_shuffledCards);
+        _shuffledCards.Clear();
+        return cards;
     }
 
     public void Cleanup()

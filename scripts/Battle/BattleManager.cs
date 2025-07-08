@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using GoblinCardGame.scripts.cards;
 using Godot;
 
@@ -21,7 +23,7 @@ public partial class BattleManager : Node
     
     public bool CanDrawCard => Battle.PlayerDeck.HasShuffledCards && Battle.PlayerHand.CanAddCard;
     public bool CanPlayCard => PlayerActionsRemaining > 0;
-    public bool EnemyHasCards => !Battle.EnemyHand.IsEmpty();
+    public bool EnemyHasCardsInHand => !Battle.EnemyHand.IsEmpty();
 
     public bool IsPlayerTurn
     {
@@ -34,7 +36,11 @@ public partial class BattleManager : Node
         get => Battle.PlayerActionsRemaining;
         private set => Battle.PlayerActionsRemaining = value;
     }
-    
+
+    public IEnumerable<Card> AllCardsInActiveBattle =>
+        // get cards in player hand, enemy hand, melee, deck TODO - add discard
+        Battle.PlayerHand.Cards.Concat(Battle.PlayerDeck.Cards).Concat(Battle.EnemyHand.Cards).Concat(Battle.MeleeCards.Cards);
+
     public override void _Ready()
     {
         CallDeferred(nameof(_DeferredInit));
@@ -84,8 +90,8 @@ public partial class BattleManager : Node
         if (what == NotificationExitTree)
         {
             Battle.MeleeCards.ClearCards(true);
-            Battle.PlayerHand.ClearCards(true);
-            Battle.EnemyHand.ClearCards(true);
+            Battle.PlayerHand.RemoveCards(true);
+            Battle.EnemyHand.RemoveCards(true);
             Battle.PlayerDeck.Cleanup();
         }
     }
@@ -117,11 +123,11 @@ public partial class BattleManager : Node
         return Card(_cardDataDict[cardId]);
     }
 
-    public void DoEnemyTurn(bool isFirstTurn = false)
+    private void DoEnemyTurn(bool isFirstTurn = false)
     {
         var numCardsToPlay = Math.Min(isFirstTurn ? 1 : GlobalSettings.EnemyActionsPerTurn, Battle.EnemyHand.CardCount);
 
-        for (int i = 0; i < numCardsToPlay; i++)
+        for (var i = 0; i < numCardsToPlay; i++)
         {
             if (Battle.EnemyHand.IsEmpty())
                 return;
@@ -132,19 +138,19 @@ public partial class BattleManager : Node
         }
     }
 
-    public void HandlePlayerPassTurn()
+    public async Task HandlePlayerPassTurn()
     {
         // TODO - if actions remaining, do confirmation
         IsPlayerTurn = false;
 
-        if (EnemyHasCards)
+        if (EnemyHasCardsInHand)
         {
             DoEnemyTurn();
             HandleStartOfPlayerTurn();
         }
         else
         {
-            ResolveCombatPhase();
+            await ResolveCombatPhase();
         }
 
         
@@ -160,9 +166,12 @@ public partial class BattleManager : Node
         PlayerActionsRemaining -= 1;
     }
 
-    private void ResolveCombatPhase()
+    public async Task ResolveCombatPhase()
     {
-        Battle.MeleeCards.DoBattle();
+        await Battle.MeleeCards.DoBattle();
+        
+        // Check if battle over, out of all cards, if one side has none battle is over
+        HandleResetBattle();
     }
 
     public void DrawCard()
@@ -197,16 +206,52 @@ public partial class BattleManager : Node
         HandleStartOfPlayerTurn(playerGoesFirst);
     }
 
+    public void HandleEndOfBattle()
+    {
+        // TODO - end of battle
+        GD.Print("Game Over!");
+    }
+
+    public void HandleResetBattle()
+    {
+        // Get cards - put them back in player deck or enemy hand
+        var allCards = RemoveAllCardsInActiveBattle().ToList();
+        var enemyCards = allCards.Where(card => card.IsEnemy == true).ToList();
+        var playerCards = allCards.Where(card => card.IsEnemy == false).ToList();
+
+        if (enemyCards.Count == 0 || playerCards.Count == 0)
+        {
+            HandleEndOfBattle();
+            return;
+        }
+        
+        Battle.PlayerDeck.Cards = playerCards;
+        Battle.PlayerDeck.ShuffleCards();
+        Battle.EnemyHand.Cards = enemyCards;
+    }
+
+    /** Starts player turn, sets IsPlayerTurn to true & sets PlayerActionsRemaining */
     public void HandleStartOfPlayerTurn(bool isFirstTurn = false)
     {
         IsPlayerTurn = true;
         DrawCards(GlobalSettings.PlayerDrawCardsPerTurn);
-        if (EnemyHasCards)
+        if (EnemyHasCardsInHand)
             PlayerActionsRemaining = isFirstTurn ? 1: GlobalSettings.PlayerActionsPerTurn;
         else
             PlayerActionsRemaining = Battle.PlayerHand.CardCount;
+    }
 
+    public IEnumerable<Card> RemoveAllCardsInActiveBattle(bool destroy = false)
+    {
+        IEnumerable<Card> cards = [];
+
+        cards = cards.Concat(Battle.PlayerHand.RemoveCards());
+        cards = cards.Concat(Battle.EnemyHand.RemoveCards());
+        cards = cards.Concat(Battle.PlayerDeck.RemoveCards());
+        cards = cards.Concat(Battle.MeleeCards.RemoveCards());
+        // TODO - add discard, maybe put all in discard before melee starts so no concatenating necessary
         
+        return cards;
     }
 
     private void CreateEnemyCards()

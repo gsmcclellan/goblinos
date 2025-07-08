@@ -32,7 +32,7 @@ public partial class CardRow : HBoxContainer, ICardContainer
 
         set
         {
-            ClearCards();
+            RemoveCards();
             var i = 0;
             foreach (var card in value)
             {
@@ -76,9 +76,17 @@ public partial class CardRow : HBoxContainer, ICardContainer
 
     
 
-    public void ClearCards(bool destroy = false)
+    public IEnumerable<Card> RemoveCards(bool destroy = false)
     {
-        _cardSlots.ForEach(slot => slot.RemoveCard(destroy));
+        List<Card> cards = [];
+        _cardSlots.ForEach((slot) =>
+        {
+            var card = slot.RemoveCard(destroy);
+            if (card != null)
+                cards.Add(card);
+        });
+
+        return cards;
     }
 
     public bool HasCard(Card card)

@@ -1,18 +1,46 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using Godot.Collections;
 
 namespace GoblinCardGame.scripts.cards;
 
-public partial class CardContainer : Control
+public partial class CardContainer : Control, ICardContainer
 {
     [Export] public int MaxCards = 20;
 
-    public Array<Card> Cards { get; set; } = [];
+    public List<Card> CardList = [];
 
-    public bool CanAddCard => Cards.Count < MaxCards;
-    
+    public IEnumerable<Card> Cards
+    {
+        get => CardList;
+        set => CardList = value.ToList();
+    }
+
+    public int CardCount => CardList.Count;
+    public bool CanAddCard => CardCount < MaxCards;
+
+    public IEnumerable<Card> RemoveCards(bool destroy = false)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool HasCard(Card card)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool IsEmpty()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Card RemoveRandomCard(int number = 1)
+    {
+        throw new NotImplementedException();
+    }
+
     public override void _Ready()
     {
         _UpdateCardPositions();
@@ -62,27 +90,28 @@ public partial class CardContainer : Control
 
     
     /** Adds card if able */
-    public void AddCard(Card card)
+    public bool AddCard(Card card)
     {
-        if (!CanAddCard) return;
+        if (!CanAddCard) return false;
         
-        Cards.Add(card);
+        CardList.Add(card);
         AddChild(card);
         _UpdateCardPositions();
+        return true;
     }
 
     public void RemoveCard(Card card)
     {
-        if (!Cards.Contains(card)) 
-            throw new Exception("Card alredy removed");
-        Cards.Remove(card);
+        if (!CardList.Contains(card)) 
+            throw new Exception("Card already removed");
+        CardList.Remove(card);
         RemoveChild(card);
         _UpdateCardPositions();
     }
     
     public void ClearCards(bool destroy = false)
     {
-        foreach (var card in Cards)
+        foreach (var card in CardList)
         {
             RemoveChild(card);
             card.QueueFree();

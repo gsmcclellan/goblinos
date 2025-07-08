@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Godot;
 
 namespace GoblinCardGame.scripts.Battle;
@@ -47,6 +48,6 @@ public partial class BattleUserInterface : Control
     {
         GD.Print("OnPlayerPassTurnButton pressed");
 
-        _battleManager.HandlePlayerPassTurn();
+        _ = _battleManager.HandlePlayerPassTurn();
     }
 }

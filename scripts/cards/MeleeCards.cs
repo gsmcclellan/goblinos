@@ -10,14 +10,14 @@ public partial class MeleeCards : CardContainer
 {
     public async Task DoBattle()
     {
-        for (int i = 0; i < GlobalSettings.NumberOfCombatRounds; i++)
+        for (var i = 0; i < GlobalSettings.NumberOfCombatRounds; i++)
         {
             GD.Print($"Round {i + 1} of {GlobalSettings.NumberOfCombatRounds}");
             await DoBattleRoundAsync();
         }
     }
     
-    public async Task DoBattleRoundAsync (float delaySeconds = 0.5f)
+    private async Task DoBattleRoundAsync (float delaySeconds = 0.5f)
     {
         var actedCards = new HashSet<Card>(); // if current card dies, get next card by iterating list until you find one that hasn't acted
         Card currentCard = null;
@@ -51,8 +51,8 @@ public partial class MeleeCards : CardContainer
                 
 
             // If current card has died, get first card in Cards which has not acted
-            if (currentCard.Health < 0 || !Cards.Contains(currentCard))
-                currentCard = Cards.FirstOrDefault(c => !actedCards.Contains(c));
+            if (currentCard.Health < 0 || !CardList.Contains(currentCard))
+                currentCard = CardList.FirstOrDefault(c => !actedCards.Contains(c));
             else 
                 actedCards.Add(currentCard);
         } while (HasNext(currentCard));
@@ -60,14 +60,14 @@ public partial class MeleeCards : CardContainer
 
     private bool HasNext(Card card)
     {
-        return Cards.IndexOf(card) < Cards.Count - 1;
+        return CardList.IndexOf(card) < CardCount - 1;
     }
 
     private Card GetNext(Card card)
     {
         if (card == null)
-            return Cards[0];
-        return Cards[Cards.IndexOf(card) + 1];
+            return CardList[0];
+        return CardList[CardList.IndexOf(card) + 1];
     }
 
     /**
@@ -76,25 +76,25 @@ public partial class MeleeCards : CardContainer
     private Card GetNearestTarget(Card card)
     {
         // get index of card
-        var index = Cards.IndexOf(card);
+        var index = CardList.IndexOf(card);
         // get card to left
         Card cardOnLeft = null;
         for (int i = index - 1; i >= 0; i--)
         {
-            if (Cards[i].IsEnemy != card.IsEnemy)
+            if (CardList[i].IsEnemy != card.IsEnemy)
             {
-                cardOnLeft = Cards[i];
+                cardOnLeft = CardList[i];
                 break;
             }
                 
         }
         // get card to right
         Card cardOnRight = null;
-        for (int i = index + 1; i < Cards.Count; i++)
+        for (int i = index + 1; i < CardCount; i++)
         {
-            if (Cards[i].IsEnemy != card.IsEnemy)
+            if (CardList[i].IsEnemy != card.IsEnemy)
             {
-                cardOnRight = Cards[i];
+                cardOnRight = CardList[i];
                 break;
             }
         }
@@ -112,14 +112,12 @@ public partial class MeleeCards : CardContainer
         RemoveCard(card);
         card.QueueFree();
     }
-
     public new void AddCard(Card card)
     {
         if (!CanAddCard) return;
-        card.CardName = $"({Cards.Count.ToString()}) {card.CardName}";
+        card.CardName = $"({CardCount.ToString()}) {card.CardName}";
         
-        
-        Cards.Add(card);
+        CardList.Add(card);
         AddChild(card);
         _UpdateCardPositions();
     }

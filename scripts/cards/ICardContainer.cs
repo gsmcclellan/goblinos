@@ -11,7 +11,7 @@ public interface ICardContainer
     
     /* Methods */
     public bool AddCard(Card card);
-    public void ClearCards(bool destroy = false);
+    public IEnumerable<Card> RemoveCards(bool destroy = false);
     public bool HasCard(Card card);
     public bool IsEmpty();
     public Card RemoveRandomCard(int number = 1);
