@@ -50,16 +50,16 @@ public partial class Card : Control
 
     public int Shield
     {
-        get { return _shield; }
+        get => _shield;
         set
         {
             _shield = value;
-            UpdateArmorLabel();
+            UpdateShieldLabel();
         }
     }
     public int Health
     {
-        get { return _health; }
+        get => _health;
         set
         {
             _health = value;
@@ -75,8 +75,8 @@ public partial class Card : Control
 
     public int MaxHealth
     {
-        get { return _maxHealth; }
-        set { _maxHealth = value; }
+        get => _maxHealth;
+        set => _maxHealth = value;
     }
 
     public int Power
@@ -174,7 +174,7 @@ public partial class Card : Control
             _cardNameLabel.Text = _cardName;
     }
 
-    private void UpdateArmorLabel()
+    private void UpdateShieldLabel()
     {
         if (_shieldLabel != null)
             _shieldLabel.Text = _shield.ToString();
@@ -194,7 +194,7 @@ public partial class Card : Control
 
     private void UpdateStatLabels()
     {
-        UpdateArmorLabel();
+        UpdateShieldLabel();
         UpdateHealthLabel();
         UpdatePowerLabel();
         UpdateCardNameLabel();
