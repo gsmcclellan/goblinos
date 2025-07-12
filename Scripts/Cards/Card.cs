@@ -3,6 +3,7 @@ using System.Text.Json;
 using Godot;
 
 using GoblinCardGame.scripts.Battle;
+using BattleManager = GoblinCardGame.Scripts.Battle.BattleManager;
 
 namespace GoblinCardGame.scripts.cards;
 public partial class Card : Control
@@ -109,13 +110,6 @@ public partial class Card : Control
         // Fire your event here
     }
 
-    public override void _ExitTree()
-    {
-        GD.Print("Node removed from scene tree");
-        _UpdateUI();
-        _RemoveSubscriptions();
-    }
-
     public void _InitializeBattleManager()
     {
         _battleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
@@ -136,6 +130,7 @@ public partial class Card : Control
     {
         // Check if playable
         Button button = GetNode<Button>("PlayButton");
+        GD.Print($"{CardName} is playable: {IsPlayable}");
         if (button != null) button.Visible = IsPlayable;
     }
     /** Sets up listeners for signals coming from BattleManager to update UI / status */

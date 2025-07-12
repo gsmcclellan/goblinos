@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using GoblinCardGame.Scripts.Battle;
 using Godot;
 
 namespace GoblinCardGame.scripts.Battle;

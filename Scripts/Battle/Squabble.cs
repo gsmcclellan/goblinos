@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using GoblinCardGame.scripts;
+using GoblinCardGame.scripts.cards;
 using Godot;
 
-namespace GoblinCardGame.scripts.cards;
+namespace GoblinCardGame.Scripts.Battle;
 
-public partial class MeleeCards : CardContainer
+public partial class Squabble : Scripts.CardContainers.CardContainer
 {
     public async Task DoBattle()
     {

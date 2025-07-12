@@ -1,4 +1,6 @@
 using System.Threading.Tasks;
+using GoblinCardGame.Scripts.Battle;
+using GoblinCardGame.Scripts.CardContainers;
 using Godot;
 using GoblinCardGame.scripts.cards;
 
@@ -24,8 +26,8 @@ public partial class Battle : Node2D
     public ICardContainer PlayerHand;
     public ICardContainer EnemyHand;
     
-    public Deck PlayerDeck;
-    public MeleeCards MeleeCards;
+    public Scripts.CardContainers.Deck PlayerDeck;
+    public Squabble Squabble;
 
     private bool _isPlayerTurn;
     private int _playerActionsRemaining;
@@ -59,10 +61,10 @@ public partial class Battle : Node2D
     {
         BattleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
         UserInterface = GetNode<BattleUserInterface>(GlobalSettings.BattleUserInterfacePath);
-        PlayerHand = GetNode<CardRow>(_playerHandPath);
-        EnemyHand = GetNode<CardRow>(_enemyHandPath);
-        PlayerDeck = GetNode<Deck>(_playerDeckPath);
-        MeleeCards = GetNode<MeleeCards>(_meleeCardsPath);
+        PlayerHand = GetNode<Scripts.CardContainers.CardRow>(_playerHandPath);
+        EnemyHand = GetNode<Scripts.CardContainers.CardRow>(_enemyHandPath);
+        PlayerDeck = GetNode<Scripts.CardContainers.Deck>(_playerDeckPath);
+        Squabble = GetNode<Squabble>(_meleeCardsPath);
     }
 
     public void _Init()
@@ -78,8 +80,8 @@ public partial class Battle : Node2D
     public void OnAddEnemyButtonPressed()
     {
         GD.Print("Add Soldier");
-        if (!MeleeCards.CanAddCard) return;
-        MeleeCards.AddCard(BattleManager.Card("soldier"));
+        if (!Squabble.CanAddCard) return;
+        Squabble.AddCard(BattleManager.Card("soldier"));
     }
 
     public void OnAddGoblinButtonPressed()

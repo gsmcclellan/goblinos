@@ -1,0 +1,69 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using GoblinCardGame.scripts;
+using GoblinCardGame.scripts.cards;
+using Godot;
+using BattleManager = GoblinCardGame.Scripts.Battle.BattleManager;
+using Card = GoblinCardGame.scripts.cards.Card;
+
+namespace GoblinCardGame.Scripts.CardContainers;
+
+public partial class Deck: CardPile
+{
+    /* Utility stuff */
+    
+    /* Node references */
+    private BattleManager _battleManager;
+    [Export] private Label _cardCountLabel;
+    
+    /* Properties */
+    
+    public override void _Ready()
+    {
+        _battleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
+        _cardCountLabel = GetNode<Label>("CardCountLabel");
+    }
+
+    /** Creates cards from array of card data objects */
+    public void InitializeFromCardData(CardData[] cardDataArray)
+    {
+        CardList = [];
+        foreach (CardData cardData in cardDataArray)
+        {
+            Card card = new Card();
+            card.InitializeFromCardData(cardData);
+        }
+    }
+
+    /** Creates cards from json serialized card data objects */
+    public void InitializeFromJson(string json)
+    {
+        CardData[] cardDataArray = JsonSerializer.Deserialize<CardData[]>(json);
+        InitializeFromCardData(cardDataArray);
+    }
+    /** Shuffles cards & enables them to be drawn */
+
+    public void CreateStartingTestDeck()
+    {
+        for (var i = 0; i < 5; i++)
+        {
+            Card goblinShielderCard = _battleManager.Card("goblin_shielder");
+            Card goblinStabberCard = _battleManager.Card("goblin_stabber");
+            CardList.Add(goblinShielderCard);
+            CardList.Add(goblinStabberCard);
+        }
+        ShuffleCards();
+    }
+
+    
+    
+    
+    /** Handles updating remaining cards label from _shuffledCardCount */
+    private void UpdateShuffledCardCountLabel()
+    {
+        if (_cardCountLabel != null)
+            _cardCountLabel.Text = $"{CardCount}";
+    }
+}

@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GoblinCardGame.scripts;
+using GoblinCardGame.scripts.cards;
 using Godot;
 using Godot.Collections;
 
-namespace GoblinCardGame.scripts.cards;
+namespace GoblinCardGame.Scripts.CardContainers;
 
 public partial class CardContainer : Control, ICardContainer
 {
@@ -21,24 +23,14 @@ public partial class CardContainer : Control, ICardContainer
     public int CardCount => CardList.Count;
     public bool CanAddCard => CardCount < MaxCards;
 
-    public IEnumerable<Card> RemoveCards(bool destroy = false)
-    {
-        throw new NotImplementedException();
-    }
-
     public bool HasCard(Card card)
     {
-        throw new NotImplementedException();
-    }
-
-    public bool IsEmpty()
-    {
-        throw new NotImplementedException();
+        return CardCount > 0;
     }
 
     public Card RemoveRandomCard(int number = 1)
     {
-        throw new NotImplementedException();
+        return CardList[GD.RandRange(0, CardCount)];
     }
 
     public override void _Ready()
@@ -109,12 +101,24 @@ public partial class CardContainer : Control, ICardContainer
         _UpdateCardPositions();
     }
     
-    public void ClearCards(bool destroy = false)
+    public IEnumerable<Card> RemoveAllCards(bool destroy = false)
     {
-        foreach (var card in CardList)
+        var cards = new List<Card>();
+        
+        while (CardList.Count > 0)
         {
-            RemoveChild(card);
-            card.QueueFree();
+            Card card = CardList[0];
+            RemoveCard(card);
+            if (destroy)
+                card.QueueFree();
+            else
+            {
+                cards.Add(card);
+                card.Position = Vector2.Zero;
+            }
+                
         }
+
+        return cards;
     }
 }

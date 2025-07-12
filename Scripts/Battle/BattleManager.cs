@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using GoblinCardGame.scripts;
 using GoblinCardGame.scripts.cards;
 using Godot;
 
-namespace GoblinCardGame.scripts.Battle;
+namespace GoblinCardGame.Scripts.Battle;
 
 public partial class BattleManager : Node
 {
@@ -14,16 +15,16 @@ public partial class BattleManager : Node
     [Signal] public delegate void PlayerActionsRemainingChangedEventHandler(int newValue, int oldValue);
     
     
-    [Export] public Battle Battle;
+    [Export] public scripts.Battle.Battle Battle;
     [Export] private string _cardDataJsonPath = "res://data/test_cards.json";
     
     private PackedScene _cardScene = GD.Load<PackedScene>("res://nodes/card.tscn");
     
     private Dictionary<string, CardData> _cardDataDict;
     
-    public bool CanDrawCard => Battle.PlayerDeck.HasShuffledCards && Battle.PlayerHand.CanAddCard;
+    public bool CanDrawCard => !Battle.PlayerDeck.IsEmpty && Battle.PlayerHand.CanAddCard;
     public bool CanPlayCard => PlayerActionsRemaining > 0;
-    public bool EnemyHasCardsInHand => !Battle.EnemyHand.IsEmpty();
+    public bool EnemyHasCardsInHand => !Battle.EnemyHand.IsEmpty;
 
     public bool IsPlayerTurn
     {
@@ -39,7 +40,7 @@ public partial class BattleManager : Node
 
     public IEnumerable<Card> AllCardsInActiveBattle =>
         // get cards in player hand, enemy hand, melee, deck TODO - add discard
-        Battle.PlayerHand.Cards.Concat(Battle.PlayerDeck.Cards).Concat(Battle.EnemyHand.Cards).Concat(Battle.MeleeCards.Cards);
+        Battle.PlayerHand.Cards.Concat(Battle.PlayerDeck.Cards).Concat(Battle.EnemyHand.Cards).Concat(Battle.Squabble.Cards);
 
     public override void _Ready()
     {
@@ -57,7 +58,7 @@ public partial class BattleManager : Node
 
     private void _InitializeBattleComponents()
     {
-        Battle = GetParent() as Battle;
+        Battle = GetParent() as scripts.Battle.Battle;
         if (Battle == null)
             throw new Exception("Battle component not found");
         
@@ -85,23 +86,21 @@ public partial class BattleManager : Node
         GD.PrintErr("Failed to parse card dictionary");
     }
     
-    public override void _Notification(int what)
+    private void OnTreeExiting()
     {
-        if (what == NotificationExitTree)
-        {
-            Battle.MeleeCards.ClearCards(true);
-            Battle.PlayerHand.RemoveCards(true);
-            Battle.EnemyHand.RemoveCards(true);
-            Battle.PlayerDeck.Cleanup();
-        }
+        Battle.Squabble.RemoveAllCards(true);
+        Battle.PlayerHand.RemoveAllCards(true);
+        Battle.EnemyHand.RemoveAllCards(true);
+        Battle.PlayerDeck.Cleanup();
     }
+
 
     private void _SetupSubscriptions()
     {
         Battle.Connect(
             "PlayerActionsRemainingChanged",
             Callable.From<int, int>((newValue, oldValue) =>
-                EmitSignal(nameof(PlayerActionsRemainingChanged), newValue, oldValue)
+                EmitSignal(nameof(Battle.BattleManager.PlayerActionsRemainingChanged), newValue, oldValue)
             )
         );
     }
@@ -129,12 +128,12 @@ public partial class BattleManager : Node
 
         for (var i = 0; i < numCardsToPlay; i++)
         {
-            if (Battle.EnemyHand.IsEmpty())
+            if (Battle.EnemyHand.IsEmpty)
                 return;
             
             // Select card to play
             var card = Battle.EnemyHand.RemoveRandomCard();
-            Battle.MeleeCards.AddCard(card);
+            Battle.Squabble.AddCard(card);
         }
     }
 
@@ -147,6 +146,8 @@ public partial class BattleManager : Node
         {
             DoEnemyTurn();
             HandleStartOfPlayerTurn();
+            
+            // TODO - if player has no actions remaining, go to combat phase
         }
         else
         {
@@ -158,17 +159,17 @@ public partial class BattleManager : Node
     
     private void PlayCard(Card card)
     {
-        if (!Battle.MeleeCards.CanAddCard) return;
+        if (!Battle.Squabble.CanAddCard) return;
         
         CardSlot cardSlot = card.GetParent() as CardSlot;
         cardSlot?.RemoveCard();
-        Battle.MeleeCards.AddCard(card);
+        Battle.Squabble.AddCard(card);
         PlayerActionsRemaining -= 1;
     }
 
     public async Task ResolveCombatPhase()
     {
-        await Battle.MeleeCards.DoBattle();
+        await Battle.Squabble.DoBattle();
         
         // Check if battle over, out of all cards, if one side has none battle is over
         HandleResetBattle();
@@ -216,8 +217,8 @@ public partial class BattleManager : Node
     {
         // Get cards - put them back in player deck or enemy hand
         var allCards = RemoveAllCardsInActiveBattle().ToList();
-        var enemyCards = allCards.Where(card => card.IsEnemy == true).ToList();
-        var playerCards = allCards.Where(card => card.IsEnemy == false).ToList();
+        var enemyCards = allCards.Where(card => card.IsEnemy).ToList();
+        var playerCards = allCards.Where(card => !card.IsEnemy).ToList();
 
         if (enemyCards.Count == 0 || playerCards.Count == 0)
         {
@@ -228,27 +229,31 @@ public partial class BattleManager : Node
         Battle.PlayerDeck.Cards = playerCards;
         Battle.PlayerDeck.ShuffleCards();
         Battle.EnemyHand.Cards = enemyCards;
+
+        HandleStartOfPlayerTurn();
     }
 
     /** Starts player turn, sets IsPlayerTurn to true & sets PlayerActionsRemaining */
     public void HandleStartOfPlayerTurn(bool isFirstTurn = false)
     {
+        GD.Print("HandleStartOfPlayerTurn");
         IsPlayerTurn = true;
         DrawCards(GlobalSettings.PlayerDrawCardsPerTurn);
         if (EnemyHasCardsInHand)
             PlayerActionsRemaining = isFirstTurn ? 1: GlobalSettings.PlayerActionsPerTurn;
         else
             PlayerActionsRemaining = Battle.PlayerHand.CardCount;
+        GD.Print("PlayerActionsRemaining: ", PlayerActionsRemaining);
     }
 
     public IEnumerable<Card> RemoveAllCardsInActiveBattle(bool destroy = false)
     {
         IEnumerable<Card> cards = [];
 
-        cards = cards.Concat(Battle.PlayerHand.RemoveCards());
-        cards = cards.Concat(Battle.EnemyHand.RemoveCards());
-        cards = cards.Concat(Battle.PlayerDeck.RemoveCards());
-        cards = cards.Concat(Battle.MeleeCards.RemoveCards());
+        cards = cards.Concat(Battle.PlayerHand.RemoveAllCards());
+        cards = cards.Concat(Battle.EnemyHand.RemoveAllCards());
+        cards = cards.Concat(Battle.PlayerDeck.RemoveAllCards());
+        cards = cards.Concat(Battle.Squabble.RemoveAllCards());
         // TODO - add discard, maybe put all in discard before melee starts so no concatenating necessary
         
         return cards;
@@ -256,9 +261,15 @@ public partial class BattleManager : Node
 
     private void CreateEnemyCards()
     {
+        Battle.EnemyHand.AddCard(Card("soldier"));
         while (Battle.EnemyHand.CanAddCard)
         {
-            Battle.EnemyHand.AddCard(Card("soldier"));
+        Battle.EnemyHand.AddCard(Card("soldier"));
         }
+    }
+
+    private void OnBreakButtonPressed()
+    {
+        GD.Print("Break here");
     }
 }

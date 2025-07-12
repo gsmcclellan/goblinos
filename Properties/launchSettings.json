@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "GoblinCardGame": {
+      "commandName": "Project",
+      "commandLineArgs": "--path .\r\n",
+      "workingDirectory": "C:\\Users\\Greg\\OneDrive\\Documents\\goblincardgame"
+    },
+    "Godot Editor": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Users\\Greg\\workspace\\Godot_v4.4.1-stable_mono_win64\\Godot_v4.4.1-stable_mono_win64.exe",
+      "commandLineArgs": "--path . --verbose",
+      "workingDirectory": "$(ProjectDir)"
+    }
+  }
+}

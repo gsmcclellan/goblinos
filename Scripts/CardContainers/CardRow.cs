@@ -1,9 +1,10 @@
-using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using GoblinCardGame.scripts.cards;
+using Godot;
 using Card = GoblinCardGame.scripts.cards.Card;
+
+namespace GoblinCardGame.Scripts.CardContainers;
 
 public partial class CardRow : HBoxContainer, ICardContainer
 {
@@ -32,7 +33,7 @@ public partial class CardRow : HBoxContainer, ICardContainer
 
         set
         {
-            RemoveCards();
+            RemoveAllCards();
             var i = 0;
             foreach (var card in value)
             {
@@ -76,7 +77,7 @@ public partial class CardRow : HBoxContainer, ICardContainer
 
     
 
-    public IEnumerable<Card> RemoveCards(bool destroy = false)
+    public IEnumerable<Card> RemoveAllCards(bool destroy = false)
     {
         List<Card> cards = [];
         _cardSlots.ForEach((slot) =>
@@ -95,11 +96,6 @@ public partial class CardRow : HBoxContainer, ICardContainer
         return hasCard;
     }
 
-    public bool IsEmpty()
-    {
-        return _cardSlots.All(cardSlot => cardSlot.Card == null);
-    }
-
     public void RemoveCard(Card card)
     {
         CardSlot cardSlot = _cardSlots.FirstOrDefault(cardSlot => cardSlot.Card == card);
@@ -108,13 +104,4 @@ public partial class CardRow : HBoxContainer, ICardContainer
 
         cardSlot.RemoveCard();
     }
-
-    public Card RemoveRandomCard(int number = 1)
-    {
-        var i = GD.RandRange(0, CardCount - 1);
-        var card = Cards.ElementAt(i);
-        RemoveCard(card);
-        return card;
-    }
 }
-

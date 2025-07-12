@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://be8hm46t74snf"]
 
-[ext_resource type="Script" uid="uid://ejsf5bidsih2" path="res://scripts/Deck.cs" id="1_lq3eo"]
+[ext_resource type="Script" uid="uid://ejsf5bidsih2" path="res://Scripts/CardContainers/Deck.cs" id="1_lq3eo"]
 
 [node name="PlayerDeck" type="Node2D"]
 script = ExtResource("1_lq3eo")
@@ -9,7 +9,7 @@ script = ExtResource("1_lq3eo")
 offset_right = 200.0
 offset_bottom = 280.0
 
-[node name="ShuffledCardCountLabel" type="Label" parent="."]
+[node name="CardCountLabel" type="Label" parent="."]
 offset_left = 23.0
 offset_top = 250.0
 offset_right = 63.0
