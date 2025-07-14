@@ -8,7 +8,7 @@ using Godot;
 
 namespace GoblinCardGame.Scripts.Battle;
 
-public partial class Squabble : Scripts.CardContainers.CardContainer
+public partial class Scuffle : Scripts.CardContainers.CardContainer
 {
     public async Task DoBattle()
     {

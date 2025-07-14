@@ -5,6 +5,7 @@ using System.Text.Json;
 using GoblinCardGame.scripts;
 using GoblinCardGame.scripts.cards;
 using Godot;
+using static GoblinCardGame.Scripts.CardContainers.CardPile;
 using BattleManager = GoblinCardGame.Scripts.Battle.BattleManager;
 using Card = GoblinCardGame.scripts.cards.Card;
 
@@ -24,6 +25,10 @@ public partial class Deck: CardPile
     {
         _battleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
         _cardCountLabel = GetNode<Label>("CardCountLabel");
+
+        Connect(nameof(CardListChanged), new Callable(this, nameof(OnCardListChanged)));
+
+        UpdateCardCountLabel();
     }
 
     /** Creates cards from array of card data objects */
@@ -57,11 +62,14 @@ public partial class Deck: CardPile
         ShuffleCards();
     }
 
-    
-    
-    
+    /** Called by subscription when base CardPile class emits CardListChanged signal */
+    private void OnCardListChanged ()
+    {
+        UpdateCardCountLabel();
+    }
+
     /** Handles updating remaining cards label from _shuffledCardCount */
-    private void UpdateShuffledCardCountLabel()
+    private void UpdateCardCountLabel()
     {
         if (_cardCountLabel != null)
             _cardCountLabel.Text = $"{CardCount}";

@@ -1,0 +1,17 @@
+[gd_scene load_steps=2 format=3 uid="uid://bch8wkccadm1a"]
+
+[ext_resource type="Script" uid="uid://3p4s7d885hhn" path="res://Scripts/CardContainers/Discard.cs" id="1_y40kv"]
+
+[node name="Discard" type="Node2D"]
+script = ExtResource("1_y40kv")
+
+[node name="Panel" type="Panel" parent="."]
+offset_right = 200.0
+offset_bottom = 280.0
+
+[node name="CardCountLabel" type="Label" parent="."]
+offset_left = 23.0
+offset_top = 250.0
+offset_right = 63.0
+offset_bottom = 273.0
+text = "10"

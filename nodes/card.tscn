@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://b0hmw8mlcfrlo"]
 
-[ext_resource type="Script" uid="uid://cxhg1if0iosoo" path="res://Scripts/Cards/Card.cs" id="1_b2440"]
-[ext_resource type="Texture2D" uid="uid://co4iv8c4et158" path="res://assets/Spritesheet.png" id="2_wmqrx"]
+[ext_resource type="Script" uid="uid://cxhg1if0iosoo" path="res://Scripts/Cards/Card.cs" id="1_alvoo"]
+[ext_resource type="Texture2D" uid="uid://co4iv8c4et158" path="res://assets/Spritesheet.png" id="2_7bg8k"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_b2440"]
 bg_color = Color(0.705474, 0.566541, 0.49552, 1)
@@ -16,7 +16,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_b2440")
+script = ExtResource("1_alvoo")
 
 [node name="CardArea" type="Panel" parent="."]
 layout_mode = 0
@@ -59,7 +59,7 @@ scale = Vector2(0.77129, 0.978096)
 [node name="Sprite2D" type="Sprite2D" parent="CardArea/Image"]
 position = Vector2(94, 80)
 scale = Vector2(5, 5)
-texture = ExtResource("2_wmqrx")
+texture = ExtResource("2_7bg8k")
 region_enabled = true
 region_rect = Rect2(511, 35, 14, 14)
 
@@ -88,7 +88,7 @@ text = "99"
 
 [node name="Sprite2D" type="Sprite2D" parent="CardArea/Stats/Health"]
 position = Vector2(27, 18)
-texture = ExtResource("2_wmqrx")
+texture = ExtResource("2_7bg8k")
 region_enabled = true
 region_rect = Rect2(715, 172, 14, 12)
 
@@ -110,7 +110,7 @@ text = "99"
 
 [node name="Sprite2D" type="Sprite2D" parent="CardArea/Stats/Armor"]
 position = Vector2(27, 18)
-texture = ExtResource("2_wmqrx")
+texture = ExtResource("2_7bg8k")
 region_enabled = true
 region_rect = Rect2(666, 69, 10, 14)
 
@@ -132,16 +132,16 @@ text = "99"
 
 [node name="Sprite2D" type="Sprite2D" parent="CardArea/Stats/Power"]
 position = Vector2(27, 18)
-texture = ExtResource("2_wmqrx")
+texture = ExtResource("2_7bg8k")
 region_enabled = true
 region_rect = Rect2(545, 137, 14, 14)
 
 [node name="PlayButton" type="Button" parent="."]
 layout_mode = 0
-offset_left = 100.0
-offset_top = -36.0
-offset_right = 141.0
-offset_bottom = -5.0
+offset_left = 139.0
+offset_top = 232.0
+offset_right = 180.0
+offset_bottom = 263.0
 text = "Play
 "
 

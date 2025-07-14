@@ -11,8 +11,8 @@ public partial class CardRow : HBoxContainer, ICardContainer
     [Export] public int RowSize = 5;
     [Export] private int _overlap = 0;
 
-    private PackedScene _cardScene = GD.Load<PackedScene>("res://nodes/card.tscn");
-    private PackedScene _cardSlotScene = GD.Load<PackedScene>("res://nodes/card_slot.tscn");
+    private PackedScene _cardScene = GD.Load<PackedScene>("res://Nodes/Card.tscn");
+    private PackedScene _cardSlotScene = GD.Load<PackedScene>("res://Nodes/CardSlot.tscn");
 
     private List<CardSlot> _cardSlots = new List<CardSlot>();
 

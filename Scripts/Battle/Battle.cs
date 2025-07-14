@@ -17,17 +17,17 @@ public partial class Battle : Node2D
     [Export] private NodePath _playerDeckPath = "PlayerDeck";
     [Export] private NodePath _playerHandPath = "PlayerCards";
     [Export] private NodePath _enemyHandPath = "EnemyCards";
-    [Export] private NodePath _meleeCardsPath = "MeleeCards";
+    [Export] private NodePath _scufflePath = "Scuffle";
+    [Export] private NodePath _discardPath = "Discard";
     
-
+    /** Component nodes */
     public BattleManager BattleManager;
     public BattleUserInterface UserInterface;
-    
     public ICardContainer PlayerHand;
     public ICardContainer EnemyHand;
-    
-    public Scripts.CardContainers.Deck PlayerDeck;
-    public Squabble Squabble;
+    public Deck PlayerDeck;
+    public Scuffle Scuffle;
+    public CardPile Discard;
 
     private bool _isPlayerTurn;
     private int _playerActionsRemaining;
@@ -61,27 +61,23 @@ public partial class Battle : Node2D
     {
         BattleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
         UserInterface = GetNode<BattleUserInterface>(GlobalSettings.BattleUserInterfacePath);
-        PlayerHand = GetNode<Scripts.CardContainers.CardRow>(_playerHandPath);
-        EnemyHand = GetNode<Scripts.CardContainers.CardRow>(_enemyHandPath);
-        PlayerDeck = GetNode<Scripts.CardContainers.Deck>(_playerDeckPath);
-        Squabble = GetNode<Squabble>(_meleeCardsPath);
+        PlayerHand = GetNode<CardRow>(_playerHandPath);
+        EnemyHand = GetNode<CardRow>(_enemyHandPath);
+        PlayerDeck = GetNode<Deck>(_playerDeckPath);
+        Scuffle = GetNode<Scuffle>(_scufflePath);
+        Discard = GetNode<Discard>(_discardPath);
     }
 
     public void _Init()
     {
         
     }
-
-    public void OnPlayerDrawButtonPressed()
-    {
-        BattleManager.DrawCard();
-    }
     
     public void OnAddEnemyButtonPressed()
     {
         GD.Print("Add Soldier");
-        if (!Squabble.CanAddCard) return;
-        Squabble.AddCard(BattleManager.Card("soldier"));
+        if (!Scuffle.CanAddCard) return;
+        Scuffle.AddCard(BattleManager.Card("soldier"));
     }
 
     public void OnAddGoblinButtonPressed()

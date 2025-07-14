@@ -39,8 +39,8 @@ public partial class BattleManager : Node
     }
 
     public IEnumerable<Card> AllCardsInActiveBattle =>
-        // get cards in player hand, enemy hand, melee, deck TODO - add discard
-        Battle.PlayerHand.Cards.Concat(Battle.PlayerDeck.Cards).Concat(Battle.EnemyHand.Cards).Concat(Battle.Squabble.Cards);
+        // get cards in player hand, enemy hand, melee, deck, & discard
+        Battle.PlayerHand.Cards.Concat(Battle.PlayerDeck.Cards).Concat(Battle.EnemyHand.Cards).Concat(Battle.Scuffle.Cards).Concat(Battle.Discard.Cards);
 
     public override void _Ready()
     {
@@ -88,7 +88,7 @@ public partial class BattleManager : Node
     
     private void OnTreeExiting()
     {
-        Battle.Squabble.RemoveAllCards(true);
+        Battle.Scuffle.RemoveAllCards(true);
         Battle.PlayerHand.RemoveAllCards(true);
         Battle.EnemyHand.RemoveAllCards(true);
         Battle.PlayerDeck.Cleanup();
@@ -133,7 +133,7 @@ public partial class BattleManager : Node
             
             // Select card to play
             var card = Battle.EnemyHand.RemoveRandomCard();
-            Battle.Squabble.AddCard(card);
+            Battle.Scuffle.AddCard(card);
         }
     }
 
@@ -153,23 +153,37 @@ public partial class BattleManager : Node
         {
             await ResolveCombatPhase();
         }
-
-        
     }
+    
+    // TODO - implement way for player to skip straight to combat resolution phase
     
     private void PlayCard(Card card)
     {
-        if (!Battle.Squabble.CanAddCard) return;
+        if (!Battle.Scuffle.CanAddCard) return;
         
         CardSlot cardSlot = card.GetParent() as CardSlot;
         cardSlot?.RemoveCard();
-        Battle.Squabble.AddCard(card);
+        Battle.Scuffle.AddCard(card);
         PlayerActionsRemaining -= 1;
+    }
+
+    public void DiscardNonCombatCards()
+    {
+        IEnumerable<Card> cards = [];
+        cards = cards.Concat(Battle.PlayerHand.RemoveAllCards());
+        cards = cards.Concat(Battle.EnemyHand.RemoveAllCards());
+        cards = cards.Concat(Battle.PlayerDeck.RemoveAllCards());
+
+        Battle.Discard.AddCards(cards);
     }
 
     public async Task ResolveCombatPhase()
     {
-        await Battle.Squabble.DoBattle();
+        // Discard unused cards
+        DiscardNonCombatCards();
+        
+        // Resolve scuffle
+        await Battle.Scuffle.DoBattle();
         
         // Check if battle over, out of all cards, if one side has none battle is over
         HandleResetBattle();
@@ -215,8 +229,8 @@ public partial class BattleManager : Node
 
     public void HandleResetBattle()
     {
-        // Get cards - put them back in player deck or enemy hand
-        var allCards = RemoveAllCardsInActiveBattle().ToList();
+        // Get cards from discard - put them back in player deck or enemy hand
+        var allCards = Battle.Scuffle.RemoveAllCards().Concat(Battle.Discard.RemoveAllCards()).ToList();
         var enemyCards = allCards.Where(card => card.IsEnemy).ToList();
         var playerCards = allCards.Where(card => !card.IsEnemy).ToList();
 
@@ -253,7 +267,8 @@ public partial class BattleManager : Node
         cards = cards.Concat(Battle.PlayerHand.RemoveAllCards());
         cards = cards.Concat(Battle.EnemyHand.RemoveAllCards());
         cards = cards.Concat(Battle.PlayerDeck.RemoveAllCards());
-        cards = cards.Concat(Battle.Squabble.RemoveAllCards());
+        cards = cards.Concat(Battle.Scuffle.RemoveAllCards());
+        cards = cards.Concat(Battle.Discard.RemoveAllCards());
         // TODO - add discard, maybe put all in discard before melee starts so no concatenating necessary
         
         return cards;

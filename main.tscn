@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://bspb7egv67fku"]
 
 [ext_resource type="Script" uid="uid://cxlu2kv528ivv" path="res://Scripts/GlobalSettings.cs" id="2_0xm2m"]
-[ext_resource type="PackedScene" uid="uid://cy4jrd6h2knnt" path="res://nodes/battle.tscn" id="2_h2yge"]
+[ext_resource type="PackedScene" uid="uid://cy4jrd6h2knnt" path="res://Nodes/Battle.tscn" id="2_h2yge"]
 
 [node name="Main" type="Node2D"]
 
