@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://b2a35fcj8tkoe"]
 
-[ext_resource type="Script" uid="uid://biilfvy0viymf" path="res://scripts/cards/CardRow.cs" id="1_iemhb"]
+[ext_resource type="Script" uid="uid://biilfvy0viymf" path="res://Scripts/CardContainers/CardRow.cs" id="1_iemhb"]
 
 [node name="CardRow" type="HBoxContainer"]
 layout_direction = 2

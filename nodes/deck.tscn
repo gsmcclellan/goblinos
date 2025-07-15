@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://be8hm46t74snf"]
+[gd_scene load_steps=3 format=3 uid="uid://be8hm46t74snf"]
 
 [ext_resource type="Script" uid="uid://ejsf5bidsih2" path="res://Scripts/CardContainers/Deck.cs" id="1_lq3eo"]
+[ext_resource type="PackedScene" uid="uid://cp66tpg2uej2c" path="res://Nodes/CardContainer.tscn" id="2_51y2y"]
 
 [node name="PlayerDeck" type="Node2D"]
 script = ExtResource("1_lq3eo")
@@ -15,3 +16,6 @@ offset_top = 250.0
 offset_right = 63.0
 offset_bottom = 273.0
 text = "10"
+
+[node name="CardContainer" parent="." instance=ExtResource("2_51y2y")]
+visible = false
