@@ -7,7 +7,6 @@ using GoblinCardGame.scripts.cards;
 using Godot;
 using static GoblinCardGame.Scripts.CardContainers.CardPile;
 using BattleManager = GoblinCardGame.Scripts.Battle.BattleManager;
-using Card = GoblinCardGame.scripts.cards.Card;
 
 namespace GoblinCardGame.Scripts.CardContainers;
 
@@ -37,8 +36,8 @@ public partial class Deck: CardPile
         CardList = [];
         foreach (CardData cardData in cardDataArray)
         {
-            Card card = new Card();
-            card.InitializeFromCardData(cardData);
+            CardNode cardNode = new CardNode();
+            cardNode.InitializeFromCardData(cardData);
         }
     }
 
@@ -54,10 +53,10 @@ public partial class Deck: CardPile
     {
         for (var i = 0; i < 5; i++)
         {
-            Card goblinShielderCard = _battleManager.Card("goblin_shielder");
-            Card goblinStabberCard = _battleManager.Card("goblin_stabber");
-            CardList.Add(goblinShielderCard);
-            CardList.Add(goblinStabberCard);
+            CardNode goblinShielderCardNode = _battleManager.Card("goblin_shielder");
+            CardNode goblinStabberCardNode = _battleManager.Card("goblin_stabber");
+            CardList.Add(goblinShielderCardNode);
+            CardList.Add(goblinStabberCardNode);
         }
         ShuffleCards();
     }

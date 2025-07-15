@@ -7,24 +7,28 @@ namespace GoblinCardGame.Scripts.CardContainers;
 
 public interface ICardContainer
 {
+    /* Signals */
+    [Signal]
+    public delegate void CardListChangedEventHandler();
+    
     /* Properties */
-    public IEnumerable<Card> Cards { get; set; }
+    public IEnumerable<CardNode> Cards { get; set; }
     public int CardCount => Cards.Count();
     public bool CanAddCard { get; }
     public bool IsEmpty => CardCount == 0;
     
     /* Methods */
-    public bool AddCard(Card card);
+    public bool AddCard(CardNode cardNode);
     
-    public bool HasCard(Card card) => Cards.Contains(card);
+    public bool HasCard(CardNode cardNode) => Cards.Contains(cardNode);
     
-    public IEnumerable<Card> RemoveAllCards(bool destroy = false);
-    public Card RemoveRandomCard(int number = 1)
+    public IEnumerable<CardNode> RemoveAllCards(bool destroy = false);
+    public CardNode RemoveRandomCard(int number = 1)
         {
             var i = GD.RandRange(0, CardCount - 1);
             var card = Cards.ElementAt(i);
             RemoveCard(card);
             return card;
         }
-    public void RemoveCard(Card card);
+    public void RemoveCard(CardNode cardNode);
 }

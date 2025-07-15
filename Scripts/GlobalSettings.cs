@@ -14,11 +14,14 @@ public partial class GlobalSettings : Node
 
     public static readonly Random Random = new Random();
 
-    public static readonly int NumberOfCombatRounds = 2;
-    
-    public static readonly int EnemyActionsPerTurn = 1;
+    public const int NumberOfCombatRounds = 2;
+    public const int NumberOfSummoningSicknessRounds = 1;
+
+    public const int EnemyActionsPerTurn = 1;
+    public const int EnemyCombatActionsBeforeSummoningSickness = 1;
 
     public const int PlayerActionsPerTurn = 2;
+    public const int PlayerCombatActionsBeforeSummoningSickness = 1;
     public const int PlayerStartingCards = 5;
     public const int PlayerDrawCardsPerTurn = 2;
 }

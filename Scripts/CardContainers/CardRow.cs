@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GoblinCardGame.scripts.cards;
 using Godot;
-using Card = GoblinCardGame.scripts.cards.Card;
 
 namespace GoblinCardGame.Scripts.CardContainers;
 
@@ -16,16 +16,16 @@ public partial class CardRow : HBoxContainer, ICardContainer
 
     private List<CardSlot> _cardSlots = new List<CardSlot>();
 
-    public IEnumerable<Card> Cards
+    public IEnumerable<CardNode> Cards
     {
         get
         {
-            var cards = new List<Card>();
+            var cards = new List<CardNode>();
             
             _cardSlots.ForEach((slot) =>
             {
                 if (slot.HasCard)
-                    cards.Add(slot.Card);
+                    cards.Add(slot.CardNode);
             });
             
             return cards;
@@ -61,13 +61,13 @@ public partial class CardRow : HBoxContainer, ICardContainer
         }
     }
     
-    public bool AddCard(Card card)
+    public bool AddCard(CardNode cardNode)
     {
-        GD.Print("AddCard: ", card);
+        GD.Print("AddCard: ", cardNode);
         
         foreach (var cardSlot in _cardSlots.Where(cardSlot => !cardSlot.HasCard))
         {
-            cardSlot.AttachCard(card);
+            cardSlot.AttachCard(cardNode);
             return true;
         }
 
@@ -77,9 +77,9 @@ public partial class CardRow : HBoxContainer, ICardContainer
 
     
 
-    public IEnumerable<Card> RemoveAllCards(bool destroy = false)
+    public IEnumerable<CardNode> RemoveAllCards(bool destroy = false)
     {
-        List<Card> cards = [];
+        List<CardNode> cards = [];
         _cardSlots.ForEach((slot) =>
         {
             var card = slot.RemoveCard(destroy);
@@ -90,15 +90,15 @@ public partial class CardRow : HBoxContainer, ICardContainer
         return cards;
     }
 
-    public bool HasCard(Card card)
+    public bool HasCard(CardNode cardNode)
     {
-        var hasCard = _cardSlots.Any(cardSlot => cardSlot.Card == card);
+        var hasCard = _cardSlots.Any(cardSlot => cardSlot.CardNode == cardNode);
         return hasCard;
     }
 
-    public void RemoveCard(Card card)
+    public void RemoveCard(CardNode cardNode)
     {
-        CardSlot cardSlot = _cardSlots.FirstOrDefault(cardSlot => cardSlot.Card == card);
+        CardSlot cardSlot = _cardSlots.FirstOrDefault(cardSlot => cardSlot.CardNode == cardNode);
         if (cardSlot == null)
             throw new Exception("Cannot remove card, not found");
 

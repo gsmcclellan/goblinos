@@ -3,10 +3,11 @@ using System.Text.Json;
 using Godot;
 
 using GoblinCardGame.scripts.Battle;
+using GoblinCardGame.Scripts.Cards.Classes;
 using BattleManager = GoblinCardGame.Scripts.Battle.BattleManager;
 
 namespace GoblinCardGame.scripts.cards;
-public partial class Card : Control
+public partial class CardNode : Control
 {
     /* Export properties */
     [Export] public int BaseMaxArmor = 0;
@@ -20,14 +21,13 @@ public partial class Card : Control
     
     /* Signals */
     [Signal]
-    public delegate void CardTriggerPlayEventHandler(Card card);
+    public delegate void CardTriggerPlayEventHandler(CardNode cardNode);
     
     /* Subscriptions */
     private Callable _playerActionsChangedSubscription;
     
     /* Private properties */
     private string _cardName = "Card Name";
-
     private int _shield;
     private int _health;
     private int _maxArmor;
@@ -212,15 +212,15 @@ public partial class Card : Control
                                   }
                               """;
 
-    public void Attack(Card card)
+    public void Attack(CardNode cardNode)
     {
         // Get damage
         var damage = Power;
         
         // Assign damage to shield first then health
         // var remainingHealth = card.Health - damage;
-        card.TakeDamage(damage);
-        GD.Print($"{CardName} attacks {card.CardName} for {damage} damage. {card.Health} health remaining");
+        cardNode.TakeDamage(damage);
+        GD.Print($"{CardName} attacks {cardNode.CardName} for {damage} damage. {cardNode.Health} health remaining");
     }
 
     public void TakeDamage(int damage)

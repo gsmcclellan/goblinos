@@ -9,7 +9,7 @@ namespace GoblinCardGame.scripts.Battle;
 public partial class Battle : Node2D
 {
     // Signals
-    [Signal] public delegate void PlayerActionsRemainingChangedEventHandler(int oldValue, int newValue);
+    [Signal] public delegate void PlayerActionsRemainingChangedEventHandler(int newValue, int oldValue);
     [Signal] public delegate void IsPlayerTurnChangedEventHandler(int isPlayerTurn);
     
     // Properties
@@ -28,30 +28,23 @@ public partial class Battle : Node2D
     public Deck PlayerDeck;
     public Scuffle Scuffle;
     public CardPile Discard;
-
-    private bool _isPlayerTurn;
-    private int _playerActionsRemaining;
+    public BattlePlayer Player;
 
     public bool IsPlayerTurn
     {
-        get => _isPlayerTurn;
+        get => Player.IsTurn;
         set
         {
-            bool oldValue = _isPlayerTurn;
-            _isPlayerTurn = value;
-            if (!value)
-                _playerActionsRemaining = 0;
-            if (value != oldValue)
-                EmitSignal(nameof(IsPlayerTurnChanged), value);
+            Player.IsTurn = value;
         }
     }
     public int PlayerActionsRemaining
     {
-        get => _playerActionsRemaining;
+        get => Player.ActionsRemaining;
         set
         {
-            int oldValue = _playerActionsRemaining;
-            _playerActionsRemaining = value;
+            int oldValue = Player.ActionsRemaining;
+            Player.ActionsRemaining = value;
             if (value != oldValue)
                 EmitSignal(nameof(PlayerActionsRemainingChanged), value, oldValue);
         }
@@ -66,11 +59,21 @@ public partial class Battle : Node2D
         PlayerDeck = GetNode<Deck>(_playerDeckPath);
         Scuffle = GetNode<Scuffle>(_scufflePath);
         Discard = GetNode<Discard>(_discardPath);
+        
+        Player = new BattlePlayer();
+
+        _SetupSubscriptions();
     }
 
     public void _Init()
     {
         
+    }
+
+    private void _SetupSubscriptions()
+    {
+        Player.IsPlayerTurnChanged += isPlayerTurn => { EmitSignal(nameof(IsPlayerTurnChanged), isPlayerTurn); };
+        Player.PlayerActionsRemainingChanged += (int newValue, int oldValue) => { EmitSignal(nameof(PlayerActionsRemainingChanged), newValue, oldValue); };
     }
     
     public void OnAddEnemyButtonPressed()
@@ -90,11 +93,11 @@ public partial class Battle : Node2D
     {
         await BattleManager.ResolveCombatPhase();
     }
-
+    
     /** Adds card to player hand if able */
-    public void AddPlayerCard(Card card)
+    public void AddPlayerCard(CardNode cardNode)
     {
         if (PlayerHand.CanAddCard)
-            PlayerHand.AddCard(card);
+            PlayerHand.AddCard(cardNode);
     }
 }

@@ -12,9 +12,9 @@ public partial class CardContainer : Control, ICardContainer
 {
     [Export] public int MaxCards = 20;
 
-    public List<Card> CardList = [];
+    public List<CardNode> CardList = [];
 
-    public IEnumerable<Card> Cards
+    public IEnumerable<CardNode> Cards
     {
         get => CardList;
         set => CardList = value.ToList();
@@ -23,12 +23,12 @@ public partial class CardContainer : Control, ICardContainer
     public int CardCount => CardList.Count;
     public bool CanAddCard => CardCount < MaxCards;
 
-    public bool HasCard(Card card)
+    public bool HasCard(CardNode cardNode)
     {
         return CardCount > 0;
     }
 
-    public Card RemoveRandomCard(int number = 1)
+    public CardNode RemoveRandomCard(int number = 1)
     {
         return CardList[GD.RandRange(0, CardCount)];
     }
@@ -44,8 +44,8 @@ public partial class CardContainer : Control, ICardContainer
     protected void _UpdateCardPositions()
     {
         
-        Array<Card> cards = new Array<Card>(
-            GetChildren().OfType<Card>()
+        Array<CardNode> cards = new Array<CardNode>(
+            GetChildren().OfType<CardNode>()
         );
         int count = cards.Count;
 
@@ -82,39 +82,39 @@ public partial class CardContainer : Control, ICardContainer
 
     
     /** Adds card if able */
-    public bool AddCard(Card card)
+    public bool AddCard(CardNode cardNode)
     {
         if (!CanAddCard) return false;
         
-        CardList.Add(card);
-        AddChild(card);
+        CardList.Add(cardNode);
+        AddChild(cardNode);
         _UpdateCardPositions();
         return true;
     }
 
-    public void RemoveCard(Card card)
+    public void RemoveCard(CardNode cardNode)
     {
-        if (!CardList.Contains(card)) 
+        if (!CardList.Contains(cardNode)) 
             throw new Exception("Card already removed");
-        CardList.Remove(card);
-        RemoveChild(card);
+        CardList.Remove(cardNode);
+        RemoveChild(cardNode);
         _UpdateCardPositions();
     }
     
-    public IEnumerable<Card> RemoveAllCards(bool destroy = false)
+    public IEnumerable<CardNode> RemoveAllCards(bool destroy = false)
     {
-        var cards = new List<Card>();
+        var cards = new List<CardNode>();
         
         while (CardList.Count > 0)
         {
-            Card card = CardList[0];
-            RemoveCard(card);
+            CardNode cardNode = CardList[0];
+            RemoveCard(cardNode);
             if (destroy)
-                card.QueueFree();
+                cardNode.QueueFree();
             else
             {
-                cards.Add(card);
-                card.Position = Vector2.Zero;
+                cards.Add(cardNode);
+                cardNode.Position = Vector2.Zero;
             }
                 
         }

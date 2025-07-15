@@ -3,13 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GoblinCardGame.scripts;
+using GoblinCardGame.Scripts.CardContainers;
 using GoblinCardGame.scripts.cards;
 using Godot;
 
 namespace GoblinCardGame.Scripts.Battle;
 
-public partial class Scuffle : Scripts.CardContainers.CardContainer
+public partial class Scuffle : CardContainers.CardContainer
 {
+    private BattleManager _battleManager;
+    
+    public override void _Ready()
+    {
+        _battleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
+    }
     public async Task DoBattle()
     {
         for (var i = 0; i < GlobalSettings.NumberOfCombatRounds; i++)
@@ -21,22 +28,22 @@ public partial class Scuffle : Scripts.CardContainers.CardContainer
     
     private async Task DoBattleRoundAsync (float delaySeconds = 0.5f)
     {
-        var actedCards = new HashSet<Card>(); // if current card dies, get next card by iterating list until you find one that hasn't acted
-        Card currentCard = null;
+        var actedCards = new HashSet<CardNode>(); // if current card dies, get next card by iterating list until you find one that hasn't acted
+        CardNode currentCardNode = null;
         do
         {
-            currentCard = GetNext(currentCard);
+            currentCardNode = GetNext(currentCardNode);
             
-            if (currentCard == null)
+            if (currentCardNode == null)
                 throw new Exception("No current card - something went wrong");
             
             // Pick target
-            var target = GetNearestTarget(currentCard);
+            var target = GetNearestTarget(currentCardNode);
 
             // Do damage
             if (target != null)
             {
-                currentCard.Attack(target);
+                currentCardNode.Attack(target);
                 // TODO - attack animation
                 await ToSignal(GetTree().CreateTimer(delaySeconds), "timeout");
                     
@@ -53,74 +60,93 @@ public partial class Scuffle : Scripts.CardContainers.CardContainer
                 
 
             // If current card has died, get first card in Cards which has not acted
-            if (currentCard.Health < 0 || !CardList.Contains(currentCard))
-                currentCard = CardList.FirstOrDefault(c => !actedCards.Contains(c));
+            if (currentCardNode.Health < 0 || !CardList.Contains(currentCardNode))
+                currentCardNode = CardList.FirstOrDefault(c => !actedCards.Contains(c));
             else 
-                actedCards.Add(currentCard);
-        } while (HasNext(currentCard));
+                actedCards.Add(currentCardNode);
+        } while (HasNext(currentCardNode));
     }
 
-    private bool HasNext(Card card)
+    private bool HasNext(CardNode cardNode)
     {
-        return CardList.IndexOf(card) < CardCount - 1;
+        return CardList.IndexOf(cardNode) < CardCount - 1;
     }
 
-    private Card GetNext(Card card)
+    private CardNode GetNext(CardNode cardNode)
     {
-        if (card == null)
+        if (cardNode == null)
             return CardList[0];
-        return CardList[CardList.IndexOf(card) + 1];
+        return CardList[CardList.IndexOf(cardNode) + 1];
     }
 
     /**
      * Returns target for melee, either closest left or right card, if they exist (randomly selected if both) or null
      */
-    private Card GetNearestTarget(Card card)
+    private CardNode GetNearestTarget(CardNode cardNode)
     {
+        // TODO - if no target in scuffle, target something in discard (random?)
         // get index of card
-        var index = CardList.IndexOf(card);
+        var index = CardList.IndexOf(cardNode);
         // get card to left
-        Card cardOnLeft = null;
+        CardNode cardNodeOnLeft = null;
         for (int i = index - 1; i >= 0; i--)
         {
-            if (CardList[i].IsEnemy != card.IsEnemy)
+            if (CardList[i].IsEnemy != cardNode.IsEnemy)
             {
-                cardOnLeft = CardList[i];
+                cardNodeOnLeft = CardList[i];
                 break;
             }
                 
         }
         // get card to right
-        Card cardOnRight = null;
+        CardNode cardNodeOnRight = null;
         for (int i = index + 1; i < CardCount; i++)
         {
-            if (CardList[i].IsEnemy != card.IsEnemy)
+            if (CardList[i].IsEnemy != cardNode.IsEnemy)
             {
-                cardOnRight = CardList[i];
+                cardNodeOnRight = CardList[i];
                 break;
             }
         }
         
-        if (cardOnLeft != null && cardOnRight != null) // randomly pick one
-            return GD.Randf() < 0.5f ? cardOnLeft: cardOnRight;
-        if (cardOnLeft != null) // Hits left
-            return cardOnLeft;
-        return cardOnRight; // Hits right or null
+        if (cardNodeOnLeft != null && cardNodeOnRight != null) // randomly pick one
+            return GD.Randf() < 0.5f ? cardNodeOnLeft: cardNodeOnRight;
+        if (cardNodeOnLeft != null) // Hits left
+            return cardNodeOnLeft;
+        if (cardNodeOnRight != null) // Hits right
+            return cardNodeOnRight;
+        
+        // Check in discard for available targets
+        var discardedCards = _battleManager.Battle.Discard.Cards;
+        var discardTarget = discardedCards.FirstOrDefault(dc => dc.IsEnemy != cardNode.IsEnemy); // TODO - decide if last, or random
+        
+        if (discardTarget != null)
+        {
+            GD.Print("Attack discarded card: ", discardTarget.CardName);
+            return discardTarget;
+        }
+            
+
+        return null; // No targets found
     }
 
-    private void KillCard(Card card)
+    private void KillCard(CardNode cardNode)
     {
-        // Do animations
-        RemoveCard(card);
-        card.QueueFree();
+        // TODO - Do animations
+        if (IsAncestorOf(cardNode))
+            cardNode.GetParent<ICardContainer>().RemoveCard(cardNode);
+        else
+            // Must be attacking discarded card
+            _battleManager.Battle.Discard.RemoveCard(cardNode);
+        cardNode.QueueFree();
     }
-    public new void AddCard(Card card)
+    public new void AddCard(CardNode cardNode)
     {
         if (!CanAddCard) return;
-        card.CardName = $"({CardCount.ToString()}) {card.CardName}";
+        cardNode.CardName = $"({CardCount.ToString()}) {cardNode.CardName}";
         
-        CardList.Add(card);
-        AddChild(card);
+        CardList.Add(cardNode);
+        AddChild(cardNode);
         _UpdateCardPositions();
     }
 }

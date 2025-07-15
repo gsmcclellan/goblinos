@@ -11,9 +11,9 @@ public partial class CardPile : Node2D, ICardContainer
     [Signal]
     public delegate void CardListChangedEventHandler();
 
-    public List<Card> CardList = [];
+    public List<CardNode> CardList = [];
 
-    public IEnumerable<Card> Cards
+    public IEnumerable<CardNode> Cards
     {
         get => CardList;
         set => CardList = value.ToList();
@@ -23,22 +23,22 @@ public partial class CardPile : Node2D, ICardContainer
     public int CardCount => CardList.Count;
     public bool IsEmpty => CardCount == 0;
     
-    private bool _addCard(Card card)
+    private bool _addCard(CardNode cardNode)
     {
         if (!CanAddCard) return false;
-        CardList.Add(card);
+        CardList.Add(cardNode);
         return true;
     }
 
-    public bool AddCard(Card card)
+    public bool AddCard(CardNode cardNode)
     {
-        bool cardAdded = _addCard(card);
+        bool cardAdded = _addCard(cardNode);
         if (cardAdded)
             EmitSignal(nameof(CardListChanged));
         return cardAdded;
     }
 
-    public bool AddCards(IEnumerable<Card> cards)
+    public bool AddCards(IEnumerable<CardNode> cards)
     {
         // TODO - figure out what to do if some cards can be added but not all
         
@@ -56,7 +56,7 @@ public partial class CardPile : Node2D, ICardContainer
     }
 
 /** if any shuffled cards remain, return top card */
-    public Card DrawCard()
+    public CardNode DrawCard()
     {
         if (!IsEmpty)
         {
@@ -65,28 +65,29 @@ public partial class CardPile : Node2D, ICardContainer
         else
             throw new Exception("No shuffled cards");
     }
-    public bool HasCard(Card card)
+    public bool HasCard(CardNode cardNode)
     {
-        return CardList.Contains(card);
+        return CardList.Contains(cardNode);
     }
     /** Removes & returns top card in shuffled cards list */
-    private Card Pop()
+    private CardNode Pop()
     {
-        return RemoveCardAt(CardList.Count - 1);
+        var card = RemoveCardAt(CardList.Count - 1);
+        return card;
     }
-    public IEnumerable<Card> RemoveAllCards(bool destroy = false)
+    public IEnumerable<CardNode> RemoveAllCards(bool destroy = false)
     {
-        var cards = new List<Card>();
+        var cards = new List<CardNode>();
         while (CardList.Count > 0)
         {
-            Card card = CardList[0];
-            RemoveCard(card);
+            CardNode cardNode = CardList[0];
+            RemoveCard(cardNode);
             if (destroy)
-                card.QueueFree();
+                cardNode.QueueFree();
             else
             {
-                cards.Add(card);
-                card.Position = Vector2.Zero;
+                cards.Add(cardNode);
+                cardNode.Position = Vector2.Zero;
             }
                 
         }
@@ -94,26 +95,26 @@ public partial class CardPile : Node2D, ICardContainer
         return cards;
     }
 
-    public Card RemoveRandomCard(int number = 1)
+    public CardNode RemoveRandomCard(int number = 1)
     {
         if (IsEmpty)
             throw new Exception("No cards to remove");
 
-        int index = (int)GD.RandRange(0, CardCount); // RandRange returns float
-        Card card = CardList[index];
+        int index = GD.RandRange(0, CardCount);
+        CardNode cardNode = CardList[index];
         RemoveCardAt(index);
-        return card;
+        return cardNode;
     }
 
-    public void RemoveCard(Card card)
+    public void RemoveCard(CardNode cardNode)
     {
-        if (!CardList.Contains(card)) 
+        if (!CardList.Contains(cardNode)) 
             throw new Exception("Card already removed");
-        CardList.Remove(card);
+        CardList.Remove(cardNode);
         EmitSignal(nameof(CardListChanged));
     }
 
-    public Card RemoveCardAt(int index)
+    public CardNode RemoveCardAt(int index)
     {
         var card = CardList[index];
         CardList.RemoveAt(index);

@@ -7,13 +7,16 @@ namespace GoblinCardGame.Scripts.CardContainers;
 public partial class Discard: CardPile
 {
     /* Node references */
-    private BattleManager _battleManager;
+    [Export] private BattleManager _battleManager;
     [Export] private Label _cardCountLabel;
+    
+    [Export] private CardContainer _cardContainer;
     
     public override void _Ready()
     {
         _battleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
         _cardCountLabel = GetNode<Label>("CardCountLabel");
+        _cardContainer = GetNode<CardContainer>("CardContainer");
 
         Connect(nameof(CardListChanged), new Callable(this, nameof(OnCardListChanged)));
 
@@ -24,6 +27,7 @@ public partial class Discard: CardPile
     private void OnCardListChanged ()
     {
         UpdateCardCountLabel();
+        _cardContainer.Cards = Cards;
     }
 
     /** Handles updating remaining cards label from _shuffledCardCount */

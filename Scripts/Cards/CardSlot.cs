@@ -2,46 +2,45 @@ using Godot;
 using System;
 using System.Linq;
 using GoblinCardGame.scripts.cards;
-using Card = GoblinCardGame.scripts.cards.Card;
 
 public partial class CardSlot : Panel
 {
     private PackedScene _cardScene = GD.Load<PackedScene>("res://nodes/Card.tscn");
 
-    public bool HasCard => Card != null;
-    public Card Card { get; private set; } = null;
+    public bool HasCard => CardNode != null;
+    public CardNode CardNode { get; private set; } = null;
 
     public override void _Ready()
     {
         CustomMinimumSize = new Vector2(GoblinCardGame.scripts.GlobalSettings.CardWidth, GoblinCardGame.scripts.GlobalSettings.CardHeight);
     }
 
-    public Card AttachCard(Card card, bool destroyExistingCard = false)
+    public CardNode AttachCard(CardNode cardNode, bool destroyExistingCard = false)
     {
-        Card existingCard = RemoveCard(destroyExistingCard);
-        Card = card;
-        AddChild(card);
-        return existingCard;
+        CardNode existingCardNode = RemoveCard(destroyExistingCard);
+        CardNode = cardNode;
+        AddChild(cardNode);
+        return existingCardNode;
     }
 
-    public Card RemoveCard(bool destroy = false)
+    public CardNode RemoveCard(bool destroy = false)
     {
-        Card existingCard = GetChildren()
-            .OfType<Card>()
+        CardNode existingCardNode = GetChildren()
+            .OfType<CardNode>()
             .FirstOrDefault();
 
-        if (existingCard != null)
+        if (existingCardNode != null)
         {
-            RemoveChild(existingCard);
-            this.Card = null;
+            RemoveChild(existingCardNode);
+            this.CardNode = null;
             if (destroy)
             {
-                existingCard.QueueFree();
+                existingCardNode.QueueFree();
                 return null;
             }
             else
             {
-                return existingCard;
+                return existingCardNode;
             }
         }
 

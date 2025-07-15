@@ -38,7 +38,7 @@ public partial class BattleManager : Node
         private set => Battle.PlayerActionsRemaining = value;
     }
 
-    public IEnumerable<Card> AllCardsInActiveBattle =>
+    public IEnumerable<CardNode> AllCardsInActiveBattle =>
         // get cards in player hand, enemy hand, melee, deck, & discard
         Battle.PlayerHand.Cards.Concat(Battle.PlayerDeck.Cards).Concat(Battle.EnemyHand.Cards).Concat(Battle.Scuffle.Cards).Concat(Battle.Discard.Cards);
 
@@ -110,14 +110,14 @@ public partial class BattleManager : Node
         return _cardDataDict[cardId];
     }
 
-    public Card Card(CardData cardData)
+    public CardNode Card(CardData cardData)
     {
-        Card card = _cardScene.Instantiate<Card>();
-        card.InitializeFromCardData(cardData);
-        return card;
+        CardNode cardNode = _cardScene.Instantiate<CardNode>();
+        cardNode.InitializeFromCardData(cardData);
+        return cardNode;
     }
 
-    public Card Card(string cardId)
+    public CardNode Card(string cardId)
     {
         return Card(_cardDataDict[cardId]);
     }
@@ -157,19 +157,19 @@ public partial class BattleManager : Node
     
     // TODO - implement way for player to skip straight to combat resolution phase
     
-    private void PlayCard(Card card)
+    private void PlayCard(CardNode cardNode)
     {
         if (!Battle.Scuffle.CanAddCard) return;
         
-        CardSlot cardSlot = card.GetParent() as CardSlot;
+        CardSlot cardSlot = cardNode.GetParent() as CardSlot;
         cardSlot?.RemoveCard();
-        Battle.Scuffle.AddCard(card);
+        Battle.Scuffle.AddCard(cardNode);
         PlayerActionsRemaining -= 1;
     }
 
     public void DiscardNonCombatCards()
     {
-        IEnumerable<Card> cards = [];
+        IEnumerable<CardNode> cards = [];
         cards = cards.Concat(Battle.PlayerHand.RemoveAllCards());
         cards = cards.Concat(Battle.EnemyHand.RemoveAllCards());
         cards = cards.Concat(Battle.PlayerDeck.RemoveAllCards());
@@ -260,9 +260,9 @@ public partial class BattleManager : Node
         GD.Print("PlayerActionsRemaining: ", PlayerActionsRemaining);
     }
 
-    public IEnumerable<Card> RemoveAllCardsInActiveBattle(bool destroy = false)
+    public IEnumerable<CardNode> RemoveAllCardsInActiveBattle(bool destroy = false)
     {
-        IEnumerable<Card> cards = [];
+        IEnumerable<CardNode> cards = [];
 
         cards = cards.Concat(Battle.PlayerHand.RemoveAllCards());
         cards = cards.Concat(Battle.EnemyHand.RemoveAllCards());
