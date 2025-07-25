@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Linq;
-using GoblinCardGame.scripts.cards;
+using GoblinCardGame.scripts.Cards;
 
 public partial class CardSlot : Panel
 {

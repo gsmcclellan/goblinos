@@ -4,7 +4,8 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using GoblinCardGame.scripts;
-using GoblinCardGame.scripts.cards;
+using GoblinCardGame.scripts.Battle;
+using GoblinCardGame.scripts.Cards;
 using Godot;
 
 namespace GoblinCardGame.Scripts.Battle;
@@ -13,14 +14,24 @@ public partial class BattleManager : Node
 {
     // Signals
     [Signal] public delegate void PlayerActionsRemainingChangedEventHandler(int newValue, int oldValue);
+    [Signal] public delegate void PlayerTurnStartEventHandler(); // TODO - hook this event up 
+    [Signal] public delegate void PlayerTurnEndEventHandler(); // TODO - hook this event up 
+    [Signal] public delegate void ScuffleStartEventHandler(); // TODO - hook this event up 
+    [Signal] public delegate void ScuffleRoundStartEventHandler(int roundNumber); // TODO - hook this event up 
+    [Signal] public delegate void ScuffleRoundEndEventHandler(int roundNumber); // TODO - hook this event up 
+    [Signal] public delegate void ScuffleEndEventHandler(); // TODO - hook this event up 
     
-    
+    // Export properties
     [Export] public scripts.Battle.Battle Battle;
     [Export] private string _cardDataJsonPath = "res://data/test_cards.json";
     
+    public BattlePlayer Player;
     private PackedScene _cardScene = GD.Load<PackedScene>("res://nodes/card.tscn");
-    
     private Dictionary<string, CardData> _cardDataDict;
+
+    private int _cardsPlayedThisTurn = 0;
+    private int _cardsAddedToScuffleThisTurn;
+    private int _battleRound = 0;
     
     public bool CanDrawCard => !Battle.PlayerDeck.IsEmpty && Battle.PlayerHand.CanAddCard;
     public bool CanPlayCard => PlayerActionsRemaining > 0;
@@ -64,6 +75,8 @@ public partial class BattleManager : Node
         
         Battle._Init();
         Battle.UserInterface._Init();
+        
+        Player = Battle.Player;
     }
     
     private void _InitializeCardDataDict()
@@ -97,12 +110,10 @@ public partial class BattleManager : Node
 
     private void _SetupSubscriptions()
     {
-        Battle.Connect(
-            "PlayerActionsRemainingChanged",
-            Callable.From<int, int>((newValue, oldValue) =>
-                EmitSignal(nameof(Battle.BattleManager.PlayerActionsRemainingChanged), newValue, oldValue)
-            )
-        );
+        //Player.IsPlayerTurnChanged += isPlayerTurn => { EmitSignal(nameof(IsPlayerTurnChanged), isPlayerTurn); };
+        Player.PlayerActionsRemainingChanged += (int newValue, int oldValue) => { EmitSignal(nameof(PlayerActionsRemainingChanged), newValue, oldValue); };
+        Player.PlayerTurnStart += () => { EmitSignal(nameof(PlayerTurnStart)); };
+        Player.PlayerTurnEnd += () => { EmitSignal(nameof(PlayerTurnEnd)); };
     }
 
     public CardData CardData(string cardId)
@@ -124,6 +135,8 @@ public partial class BattleManager : Node
 
     private void DoEnemyTurn(bool isFirstTurn = false)
     {
+        _cardsPlayedThisTurn = 0;
+        _cardsAddedToScuffleThisTurn = 0;
         var numCardsToPlay = Math.Min(isFirstTurn ? 1 : GlobalSettings.EnemyActionsPerTurn, Battle.EnemyHand.CardCount);
 
         for (var i = 0; i < numCardsToPlay; i++)
@@ -141,7 +154,7 @@ public partial class BattleManager : Node
     {
         // TODO - if actions remaining, do confirmation
         IsPlayerTurn = false;
-
+        
         if (EnemyHasCardsInHand)
         {
             DoEnemyTurn();
@@ -157,13 +170,32 @@ public partial class BattleManager : Node
     
     // TODO - implement way for player to skip straight to combat resolution phase
     
-    private void PlayCard(CardNode cardNode)
+    public async void PlayCard(CardNode cardNode)
     {
         if (!Battle.Scuffle.CanAddCard) return;
         
         CardSlot cardSlot = cardNode.GetParent() as CardSlot;
         cardSlot?.RemoveCard();
         Battle.Scuffle.AddCard(cardNode);
+        
+
+        var cardEnterDetails = new CardEnterScuffleDetails
+        {
+            CardNode = cardNode,
+            BattleRound = _battleRound,
+            PreviousCardsPlayed = _cardsPlayedThisTurn,
+            PreviousCardsAddedToScuffle = _cardsAddedToScuffleThisTurn
+        };
+
+        _cardsPlayedThisTurn++;
+        _cardsAddedToScuffleThisTurn++;
+        
+        // Resolve things that trigger on card play - 
+        // TODO - scuffle cards do things
+        // TODO - hand cards do things?
+        
+        // Move this to be triggered by signal?
+        await cardNode.OnEnterScuffle(cardEnterDetails);
         PlayerActionsRemaining -= 1;
     }
 
@@ -251,11 +283,16 @@ public partial class BattleManager : Node
     public void HandleStartOfPlayerTurn(bool isFirstTurn = false)
     {
         GD.Print("HandleStartOfPlayerTurn");
+        // Reset per turn variables
         IsPlayerTurn = true;
+        _cardsPlayedThisTurn = 0;
+        _cardsAddedToScuffleThisTurn = 0;
+        
         DrawCards(GlobalSettings.PlayerDrawCardsPerTurn);
-        if (EnemyHasCardsInHand)
+        
+        if (EnemyHasCardsInHand) // Set player actions remaining based on settings
             PlayerActionsRemaining = isFirstTurn ? 1: GlobalSettings.PlayerActionsPerTurn;
-        else
+        else // Allow player to play rest of cards in hand once enemy has played all
             PlayerActionsRemaining = Battle.PlayerHand.CardCount;
         GD.Print("PlayerActionsRemaining: ", PlayerActionsRemaining);
     }
