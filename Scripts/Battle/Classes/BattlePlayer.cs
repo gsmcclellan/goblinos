@@ -6,10 +6,13 @@ namespace GoblinCardGame.Scripts.Battle;
 public class BattlePlayer
 {
     private int _actionsRemaining;
+    private int _cardsPlayedThisTurn;
     private bool _isTurn;
 
     public event Action<bool> IsPlayerTurnChanged;
     public event Action<int, int> PlayerActionsRemainingChanged;
+    public event Action PlayerTurnStart;
+    public event Action PlayerTurnEnd;
 
     public int ActionsRemaining
     {
@@ -32,7 +35,15 @@ public class BattlePlayer
             var oldValue = _isTurn;
             GD.Print("IsPlayerTurn: ", value);
             if (!value)
+            {
                 _actionsRemaining = 0;
+                PlayerTurnEnd?.Invoke();
+            }
+            else
+            {
+                PlayerTurnStart?.Invoke();
+            }
+                
             _isTurn = value;
             if (value != oldValue)
                 IsPlayerTurnChanged?.Invoke(value);

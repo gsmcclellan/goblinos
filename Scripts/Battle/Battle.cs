@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using GoblinCardGame.Scripts.Battle;
 using GoblinCardGame.Scripts.CardContainers;
 using Godot;
-using GoblinCardGame.scripts.cards;
+using GoblinCardGame.scripts.Cards;
 
 namespace GoblinCardGame.scripts.Battle;
 
@@ -72,8 +72,7 @@ public partial class Battle : Node2D
 
     private void _SetupSubscriptions()
     {
-        Player.IsPlayerTurnChanged += isPlayerTurn => { EmitSignal(nameof(IsPlayerTurnChanged), isPlayerTurn); };
-        Player.PlayerActionsRemainingChanged += (int newValue, int oldValue) => { EmitSignal(nameof(PlayerActionsRemainingChanged), newValue, oldValue); };
+        
     }
     
     public void OnAddEnemyButtonPressed()

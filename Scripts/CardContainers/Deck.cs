@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using GoblinCardGame.scripts;
-using GoblinCardGame.scripts.cards;
+using GoblinCardGame.scripts.Cards;
 using Godot;
 using static GoblinCardGame.Scripts.CardContainers.CardPile;
 using BattleManager = GoblinCardGame.Scripts.Battle.BattleManager;
