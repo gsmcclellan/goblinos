@@ -57,7 +57,7 @@ public partial class Scuffle : CardContainers.CardContainer
             // Do damage
             if (target != null)
             {
-                currentCardNode.Attack(target);
+                await currentCardNode.Attack(target);
                 // TODO - attack animation
                 await ToSignal(GetTree().CreateTimer(delaySeconds), "timeout");
                     
