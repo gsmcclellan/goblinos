@@ -22,6 +22,7 @@ public partial class CardNode : Control
     [Export] private Label _shieldLabel;
     [Export] private Label _powerLabel;
     [Export] private Sprite2D _summoningSicknessIcon;
+    [Export] private AnimationPlayer _animationPlayer;
     
     /* Signals */
     [Signal]
@@ -163,6 +164,7 @@ public partial class CardNode : Control
         _powerLabel = GetNode<Label>("CardArea/Stats/Power/Label");
         _cardNameLabel = GetNode<Label>("CardArea/NamePanel/Name");
         _summoningSicknessIcon = GetNode<Sprite2D>("CardArea/SummoningSicknessIcon");
+        _animationPlayer = GetNode<AnimationPlayer>("CardArea/AnimationPlayer");
         UpdateStatLabels();
         UpdateStatusIcons();
     }
@@ -231,6 +233,14 @@ public partial class CardNode : Control
     {
         
     }
+
+    public async Task PlayAnimationAsync(string animationName)
+    {
+        if (_animationPlayer == null)
+            throw new Exception("Unable to access animation player");
+        _animationPlayer.Play(animationName);
+        await ToSignal(_animationPlayer, AnimationPlayer.SignalName.AnimationFinished);
+    }
     
     private void UpdateCardNameLabel()
     {
@@ -292,40 +302,37 @@ public partial class CardNode : Control
                                   }
                               """;
 
-    public void Attack(CardNode cardNode)
+    public async Task Attack(CardNode cardNode)
     {
+        await PlayAnimationAsync("Attacks");
         // Get damage
         var damage = Power;
-        
         // Assign damage to shield first then health
         // var remainingHealth = card.Health - damage;
-        cardNode.TakeDamage(damage);
+        
+        await cardNode.TakeDamage(damage);
         _hasActed = true;
         
         // TODO - battle logging
         GD.Print($"{CardName} attacks {cardNode.CardName} for {damage} damage. {cardNode.Health} health remaining");
     }
 
-    public void TakeDamage(int damage)
+    public async Task TakeDamage(int damage)
     {
+        // Play animation
+        var animationTask = PlayAnimationAsync("IsAttacked");
         // Assign damage to shield first then health
         if (Shield >= damage)
-        {
             Shield -= damage;
-            return;
-        }
-
-        if (Shield > 0)
+        else if (Shield > 0)
         {
             Health -= damage - Shield;
             Shield = 0;
-            return;
         }
+        else
+            Health -= damage;
 
-        Health -= damage;
-
-        // var remainingHealth = card.Health - damage;
-        // GD.Print($"{Name} attacks {card.Name} for {damage} damage. ${remainingHealth} health remaining");
+        await animationTask;
     }
 }
 
