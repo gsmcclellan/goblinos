@@ -133,6 +133,13 @@ public partial class BattleManager : Node
         return Card(_cardDataDict[cardId]);
     }
 
+    
+
+    public CardNode GetTargetForCardAction(CardActionDetails details)
+    {
+        return Battle.Scuffle.GetCardActionTarget(details);
+    }
+
     private void DoEnemyTurn(bool isFirstTurn = false)
     {
         _cardsPlayedThisTurn = 0;
@@ -165,10 +172,10 @@ public partial class BattleManager : Node
         else
         {
             await ResolveCombatPhase();
-        }
+        }    
+        // TODO - implement way for player to skip straight to combat resolution phase
     }
     
-    // TODO - implement way for player to skip straight to combat resolution phase
     
     public async void PlayCard(CardNode cardNode)
     {
@@ -197,6 +204,36 @@ public partial class BattleManager : Node
         // Move this to be triggered by signal?
         await cardNode.OnEnterScuffle(cardEnterDetails);
         PlayerActionsRemaining -= 1;
+    }
+    
+    public async Task PlayCardAction(CardActionDetails details)
+    {
+        if (PlayerActionsRemaining < 1) return;
+        GD.Print("Resolve card action: ", this);
+        switch (details.ActionType)
+        {
+            case CardActionType.Shield:
+                GD.Print("shielding");
+                // get target
+                var target = GetTargetForCardAction(details);
+                // carry out action
+                target.Shield += details.CardNode.Shield;
+                // discard card
+                DiscardCard(details.CardNode);
+                break;
+            default:
+                throw new NotImplementedException($"Card action type {details.ActionType} not implemented");
+        }
+
+        PlayerActionsRemaining -= 1;
+        _cardsPlayedThisTurn++;
+    }
+
+    public void DiscardCard(CardNode cardNode)
+    {
+        CardSlot cardSlot = cardNode.GetParent() as CardSlot;
+        cardSlot?.RemoveCard();
+        Battle.Discard.AddCard(cardNode);
     }
 
     public void DiscardNonCombatCards()

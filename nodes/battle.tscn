@@ -1,9 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://cjmq3aolhaq0a"]
+[gd_scene load_steps=8 format=3 uid="uid://dykelyrr5nk7u"]
 
 [ext_resource type="Script" uid="uid://dw384y3qscd2i" path="res://Scripts/Battle/Battle.cs" id="1_gscff"]
 [ext_resource type="PackedScene" uid="uid://b2a35fcj8tkoe" path="res://Nodes/CardRow.tscn" id="2_gscff"]
 [ext_resource type="Script" uid="uid://bingaximpwi13" path="res://Scripts/Battle/BattleManager.cs" id="3_gscff"]
-[ext_resource type="PackedScene" uid="uid://cdxsq8obgbqds" path="res://Nodes/Deck.tscn" id="4_ssy3x"]
+[ext_resource type="PackedScene" uid="uid://dniwhpjtp7uuj" path="res://Nodes/Deck.tscn" id="4_ssy3x"]
 [ext_resource type="PackedScene" uid="uid://5yraic4bidl0" path="res://Nodes/Scuffle.tscn" id="5_4p6dk"]
 [ext_resource type="Script" uid="uid://dbonjpux7hvd3" path="res://Scripts/Battle/BattleUserInterface.cs" id="6_gscff"]
 [ext_resource type="PackedScene" uid="uid://bch8wkccadm1a" path="res://Nodes/Discard.tscn" id="8_8avc7"]

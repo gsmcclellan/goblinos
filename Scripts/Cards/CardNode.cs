@@ -3,10 +3,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Godot;
 
-using GoblinCardGame.scripts.Battle;
-using GoblinCardGame.scripts.Battle;
 using GoblinCardGame.Scripts.Battle;
-using GoblinCardGame.Scripts.Cards.Classes;
 using BattleManager = GoblinCardGame.Scripts.Battle.BattleManager;
 
 namespace GoblinCardGame.scripts.Cards;
@@ -26,7 +23,7 @@ public partial class CardNode : Control
     
     /* Signals */
     [Signal]
-    public delegate void CardTriggerPlayEventHandler(CardNode cardNode);
+    public delegate void TriggerAddCardToScuffleEventHandler(CardNode cardNode);
 
     [Signal]
     public delegate void CardEnterScuffleEventHandler(CardNode cardNode); // TODO - maybe this should be on scuffle element
@@ -142,6 +139,7 @@ public partial class CardNode : Control
         // Remove status effects tied to battle
         
         // Disconnect signals, stop timers, cleanup
+        _RemoveSubscriptions();
     }
 
     public void _InitializeBattleManager()
@@ -149,18 +147,13 @@ public partial class CardNode : Control
         _battleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
         
         // Add listener for Battle Manager to listen to this card.
-        // Connect(SignalName.CardTriggerPlay, new Callable(_battleManager, "PlayCard"));
-        var result = Connect(SignalName.CardTriggerPlay, new Callable(_battleManager, "PlayCard"));
-        GD.Print("Connect result: ", result); // Should be OK
-        
-        if (!IsConnected(SignalName.CardTriggerPlay, new Callable(_battleManager, "PlayCard")))
-            GD.PushError("Failed to connect CardTriggerPlay to BattleManager");
+        Connect(SignalName.TriggerAddCardToScuffle, new Callable(_battleManager, "PlayCard"));
     }
     
     private void _InitializeUI()
     {
         _healthLabel = GetNode<Label>("CardArea/Stats/Health/Label");
-        _shieldLabel = GetNode<Label>("CardArea/Stats/Armor/Label");
+        _shieldLabel = GetNode<Label>("CardArea/Stats/Shield/Label");
         _powerLabel = GetNode<Label>("CardArea/Stats/Power/Label");
         _cardNameLabel = GetNode<Label>("CardArea/NamePanel/Name");
         _summoningSicknessIcon = GetNode<Sprite2D>("CardArea/SummoningSicknessIcon");
@@ -181,12 +174,16 @@ public partial class CardNode : Control
         // Update UI when PlayerActionsRemainingChanged fires - if no more actions, cards become unplayable
         _playerActionsChangedSubscription = Callable.From((int _, int _) => _UpdateUI());
         _battleManager.Connect("PlayerActionsRemainingChanged", _playerActionsChangedSubscription);
+        
     }
 
     private void _RemoveSubscriptions()
     {
         if (_battleManager?.IsConnected("PlayerActionsRemainingChanged", _playerActionsChangedSubscription) == true)
+        {
             _battleManager.Disconnect("PlayerActionsRemainingChanged", _playerActionsChangedSubscription);
+        }
+            
     }
     
 
@@ -212,7 +209,7 @@ public partial class CardNode : Control
             return;
         
         // summoning sickness
-        if (details.PreviousCardsPlayed > 0)
+        if (details.PreviousCardsAddedToScuffle > 0)
             HasSummoningSickness = true;
     }
 
@@ -288,8 +285,30 @@ public partial class CardNode : Control
     /* Event callbacks */
     public void OnPlayButtonPressed()
     {
+        if (!IsPlayable) return;
         GD.Print("Play this card: ", this);
-        EmitSignal(SignalName.CardTriggerPlay, this);
+        EmitSignal(SignalName.TriggerAddCardToScuffle, this);
+    }
+
+    public void TriggerAddToScuffle()
+    {
+        if (!IsPlayable) return;
+        GD.Print("Trigger add card to scuffle", this);
+        EmitSignal(SignalName.TriggerAddCardToScuffle, this);
+    }
+
+    public void TriggerShieldAction()
+    {
+        if (!IsPlayable) return;
+        // TODO - make general card action function instead of hardcoding each one.
+        GD.Print("Trigger shield action"); 
+        GD.Print(SignalName.TriggerAddCardToScuffle);
+        _battleManager.PlayCardAction(new CardActionDetails
+        {
+            CardNode = this,
+            ActionType = CardActionType.Shield,
+            TargetsFriend = true
+        });
     }
     
     public string TestData = """
@@ -351,5 +370,17 @@ public class CardEnterScuffleDetails
     public int BattleRound;
     public int PreviousCardsPlayed;
     public int PreviousCardsAddedToScuffle;
+}
+
+public class CardActionDetails
+{
+    public CardActionType ActionType;
+    public CardNode CardNode;
+    public bool TargetsFriend;
+}
+
+public enum CardActionType
+{
+    Shield
 }
 
