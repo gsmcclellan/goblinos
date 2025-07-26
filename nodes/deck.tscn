@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://cdxsq8obgbqds"]
+[gd_scene load_steps=3 format=3 uid="uid://dniwhpjtp7uuj"]
 
 [ext_resource type="Script" uid="uid://ejsf5bidsih2" path="res://Scripts/CardContainers/Deck.cs" id="1_lq3eo"]
 [ext_resource type="PackedScene" uid="uid://cp66tpg2uej2c" path="res://Nodes/CardContainer.tscn" id="2_51y2y"]

@@ -52,7 +52,7 @@ public partial class Scuffle : CardContainers.CardContainer
                 
             
             // Pick target
-            var target = GetNearestTarget(currentCardNode);
+            var target = GetNearestAttackTarget(currentCardNode);
 
             // Do damage
             if (target != null)
@@ -112,7 +112,7 @@ public partial class Scuffle : CardContainers.CardContainer
     /**
      * Returns target for melee, either closest left or right card, if they exist (randomly selected if both) or null
      */
-    private CardNode GetNearestTarget(CardNode cardNode)
+    private CardNode GetNearestAttackTarget(CardNode cardNode)
     {
         // TODO - if no target in scuffle, target something in discard (random?)
         // get index of card
@@ -160,6 +160,16 @@ public partial class Scuffle : CardContainers.CardContainer
         return null; // No targets found
     }
 
+    public CardNode GetCardActionTarget(CardActionDetails details)
+    {
+        // enemy / friend
+        var targetsEnemy = details.CardNode.IsEnemy && details.TargetsFriend ||
+                           !details.CardNode.IsEnemy && !details.TargetsFriend;
+        // get last index matching -
+        return Cards.LastOrDefault(potentialTarget => potentialTarget.IsEnemy == targetsEnemy);
+
+        // factor in level
+    }
     private void KillCard(CardNode cardNode)
     {
         // TODO - Do animations
