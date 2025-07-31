@@ -1,10 +1,9 @@
 using System.Threading.Tasks;
-using GoblinCardGame.Scripts.Battle;
 using GoblinCardGame.Scripts.CardContainers;
 using Godot;
-using GoblinCardGame.scripts.Cards;
+using GoblinCardGame.Scripts.Cards;
 
-namespace GoblinCardGame.scripts.Battle;
+namespace GoblinCardGame.Scripts.Battle;
 
 public partial class Battle : Node2D
 {
@@ -52,6 +51,13 @@ public partial class Battle : Node2D
     
     public override void _Ready()
     {
+        GD.Print("Battle _Ready called");
+        var button = GetNode<Button>(_playerDeckPath + "/PlayerDrawButton");
+        GD.Print("PlayerDrawButton found: ", button != null);
+
+        // Optional: connect signal manually to verify
+        button.Connect("pressed", new Callable(this, nameof(OnPlayerDrawButtonPressed)));
+        
         BattleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
         UserInterface = GetNode<BattleUserInterface>(GlobalSettings.BattleUserInterfacePath);
         PlayerHand = GetNode<CardRow>(_playerHandPath);
@@ -98,5 +104,11 @@ public partial class Battle : Node2D
     {
         if (PlayerHand.CanAddCard)
             PlayerHand.AddCard(cardNode);
+    }
+
+    public void OnPlayerDrawButtonPressed()
+    {
+        GD.Print("PlayerDrawButton pressed");
+        BattleManager.DrawCard();
     }
 }

@@ -1,12 +1,15 @@
 using System;
 using Godot;
 
-namespace GoblinCardGame.scripts;
+namespace GoblinCardGame.Scripts;
 
 public partial class GlobalSettings : Node
 {
     public const int CardWidth = 200;
     public const int CardHeight = 280;
+
+    public const int ActionButtonHeight = 24;
+    public const int ActionButtonWidth = 190;
 
     public const string BattlePath = "/root/Main/Battle";
     public const string BattleManagerPath = "/root/Main/Battle/BattleManager";

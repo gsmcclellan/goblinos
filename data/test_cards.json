@@ -8,34 +8,69 @@
   "goblin_stabber": {
     "CardName": "Goblin Stabber",
     "MaxHealth": 10,
-    "MaxArmor": 0,
+    "Shield": 4,
     "Power": 12
   },
   "goblin_shielder": {
     "CardName": "Goblin Shielder",
+    "MaxHealth": 8,
+    "Shield": 8,
+    "Power": 6
+  },
+  "goblin_sneak": {
+    "CardName": "Goblin Sneak",
+    "MaxHealth": 6,
+    "Shield": 0,
+    "Power": 4,
+    "Actions": [
+      "Sneak"
+    ]
+  },
+  "goblin_sniper": {
+    "CardName": "Goblin Sniper",
     "MaxHealth": 10,
-    "MaxArmor": 5,
-    "Power": 5
+    "Shield": 0,
+    "Power": 8,
+    "Actions": [
+      "Snipe"
+    ]
   },
   "soldier": {
     "CardName": "Soldier",
     "MaxHealth": 20,
-    "MaxArmor": 10,
+    "Shield": 10,
     "Power": 6,
     "IsEnemy": true
   },
-  "guardsman": {
+  "soldier_captain": {
+    "CardName": "Captain",
+    "MaxHealth": 20,
+    "Shield": 10,
+    "Power": 12,
+    "IsEnemy": true
+  },
+  "soldier_guard": {
     "CardName": "Guardsman",
     "MaxHealth": 12,
-    "MaxArmor": 5,
+    "Shield": 8,
     "Power": 4,
     "IsEnemy": true
   },
-  "squire": {
-    "Cardname": "Squire",
+  "soldier_spearman": {
+    "CardName": "Spearman",
     "MaxHealth": 8,
-    "MaxArmor": 2,
-    "Power": 2,
-    "IsEnemy": true
+    "Shield": 2,
+    "Power": 6,
+    "IsEnemy": true,
+    "Actions": [],
+    "DamageType": ["FirstStrike"]
+  },
+  "soldier_crossbowman": {
+    "CardName": "Crossbowman",
+    "MaxHealth": 6,
+    "Shield": 2,
+    "Power": 8,
+    "IsEnemy": true,
+    "Actions": ["Assist"]
   }
 }

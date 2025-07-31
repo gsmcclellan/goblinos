@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
-using GoblinCardGame.Scripts.Battle;
+using GoblinCardGame.Scripts;
 using Godot;
 
-namespace GoblinCardGame.scripts.Battle;
+namespace GoblinCardGame.Scripts.Battle;
 
 public partial class BattleUserInterface : Control
 {

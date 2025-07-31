@@ -1,4 +1,4 @@
-using GoblinCardGame.scripts;
+using GoblinCardGame.Scripts;
 using GoblinCardGame.Scripts.Battle;
 using Godot;
 

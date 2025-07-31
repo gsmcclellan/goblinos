@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using GoblinCardGame.scripts.Cards;
+using GoblinCardGame.Scripts.Cards;
 using Godot;
 
 namespace GoblinCardGame.Scripts.CardContainers;

@@ -18,10 +18,9 @@ offset_right = 1437.0
 offset_bottom = 1064.0
 
 [node name="EnemyCards" parent="." instance=ExtResource("2_gscff")]
-offset_left = 317.0
-offset_top = 47.0
-offset_right = 1432.0
-offset_bottom = 327.0
+offset_top = 30.0
+offset_bottom = 310.0
+RowSize = 9
 
 [node name="BattleManager" type="Node" parent="."]
 script = ExtResource("3_gscff")
@@ -30,10 +29,10 @@ script = ExtResource("3_gscff")
 position = Vector2(1605, 766)
 
 [node name="PlayerDrawButton" type="Button" parent="PlayerDeck"]
-offset_left = 172.0
-offset_top = -57.0
-offset_right = 222.0
-offset_bottom = -26.0
+offset_left = -71.0
+offset_top = 9.0
+offset_right = -21.0
+offset_bottom = 40.0
 text = "Draw
 "
 
@@ -52,6 +51,7 @@ script = ExtResource("6_gscff")
 _playerActionsRemainingValueLabel = NodePath("ActionsRemainingValue")
 
 [node name="AddPlayerCard" type="Button" parent="BattleUI"]
+visible = false
 layout_mode = 0
 offset_left = 161.0
 offset_top = 864.0
@@ -59,37 +59,28 @@ offset_right = 255.0
 offset_bottom = 895.0
 text = "Add Goblin"
 
-[node name="AddEnemyCard" type="Button" parent="BattleUI"]
-layout_mode = 0
-offset_left = 156.0
-offset_top = 116.0
-offset_right = 251.0
-offset_bottom = 147.0
-text = "Add Enemy
-"
-
 [node name="PassPlayerTurnButton" type="Button" parent="BattleUI"]
 layout_mode = 0
-offset_left = 1725.0
-offset_top = 272.0
-offset_right = 1809.0
-offset_bottom = 303.0
+offset_left = 1727.0
+offset_top = 690.0
+offset_right = 1811.0
+offset_bottom = 721.0
 text = "Pass Turn"
 
 [node name="ActionsRemainingLabel" type="Label" parent="BattleUI"]
 layout_mode = 0
-offset_left = 1632.0
-offset_top = 237.0
-offset_right = 1780.0
-offset_bottom = 260.0
+offset_left = 1636.0
+offset_top = 655.0
+offset_right = 1784.0
+offset_bottom = 678.0
 text = "Actions Remaining:"
 
 [node name="ActionsRemainingValue" type="Label" parent="BattleUI"]
 layout_mode = 0
-offset_left = 1791.0
-offset_top = 238.0
-offset_right = 1831.0
-offset_bottom = 261.0
+offset_left = 1794.0
+offset_top = 655.0
+offset_right = 1834.0
+offset_bottom = 678.0
 text = "0"
 
 [node name="Button" type="Button" parent="."]
@@ -105,6 +96,5 @@ position = Vector2(1634, 368)
 
 [connection signal="pressed" from="PlayerDeck/PlayerDrawButton" to="." method="OnPlayerDrawButtonPressed"]
 [connection signal="pressed" from="BattleUI/AddPlayerCard" to="." method="OnAddGoblinButtonPressed"]
-[connection signal="pressed" from="BattleUI/AddEnemyCard" to="." method="OnAddEnemyButtonPressed"]
 [connection signal="pressed" from="BattleUI/PassPlayerTurnButton" to="BattleUI" method="OnPlayerPassTurnButtonPressed"]
 [connection signal="pressed" from="Button" to="BattleManager" method="OnBreakButtonPressed"]

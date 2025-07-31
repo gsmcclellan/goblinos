@@ -1,0 +1,32 @@
+{
+  "Attack": {
+    "Text": "Enter Scuffle",
+    "Icon": "",
+    "TargetsAlly": false
+  },
+  "Shield": {
+    "Text": "Shield",
+    "Icon": "",
+    "TargetsAlly": true
+  },
+  "Sneak": {
+    "Text": "Sneak",
+    "Icon": "",
+    "TargetsAlly": true
+  },
+  "Snipe": {
+    "Text": "Snipe",
+    "Icon": "",
+    "TargetsAlly": false
+  },
+  "Assist": {
+    "Text": "Assist",
+    "Icon": "",
+    "TargetsAlly": true
+  },
+  "Confuse": {
+    "Text": "Confuse",
+    "Icon": "",
+    "TargetsAlly": false
+  }
+}

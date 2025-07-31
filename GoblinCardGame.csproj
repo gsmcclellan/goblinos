@@ -4,6 +4,9 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="data\card_actions.json" />
+    <Content Include="data\demo_enemy_starting_cards.txt" />
+    <Content Include="data\demo_player_starting_cards.txt" />
     <Content Include="data\test_cards.json" />
   </ItemGroup>
   <ItemGroup>

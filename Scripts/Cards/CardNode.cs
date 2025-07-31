@@ -1,12 +1,16 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using GoblinCardGame.Scripts.Actions;
 using Godot;
 
 using GoblinCardGame.Scripts.Battle;
 using BattleManager = GoblinCardGame.Scripts.Battle.BattleManager;
 
-namespace GoblinCardGame.scripts.Cards;
+namespace GoblinCardGame.Scripts.Cards;
+
 public partial class CardNode : Control
 {
     /* Export properties */
@@ -20,17 +24,19 @@ public partial class CardNode : Control
     [Export] private Label _powerLabel;
     [Export] private Sprite2D _summoningSicknessIcon;
     [Export] private AnimationPlayer _animationPlayer;
-    
+    [Export] private Node _actionButtonContainer;
+
     /* Signals */
     [Signal]
     public delegate void TriggerAddCardToScuffleEventHandler(CardNode cardNode);
 
     [Signal]
-    public delegate void CardEnterScuffleEventHandler(CardNode cardNode); // TODO - maybe this should be on scuffle element
-    
+    public delegate void
+        CardEnterScuffleEventHandler(CardNode cardNode); // TODO - maybe this should be on scuffle element
+
     /* Subscriptions */
     private Callable _playerActionsChangedSubscription;
-    
+
     /* Private properties */
     private string _cardName = "Card Name";
     private int _shield;
@@ -42,13 +48,17 @@ public partial class CardNode : Control
     /* Battle properties */
     private bool _hasSummoningSickness;
     private bool _hasActed;
-    
+
+    public List<CardAction> Actions = [];
+
     // TODO - create status class
 
     private BattleManager _battleManager;
 
     public bool IsEnemy { get; set; }
 
+    public IEnumerable<ActionButton> ActionButtons => _actionButtonContainer?.GetChildren().OfType<ActionButton>() ?? [];
+    
     /* getters / setters */
     public string CardName
     {
@@ -69,6 +79,7 @@ public partial class CardNode : Control
             UpdateShieldLabel();
         }
     }
+
     public int Health
     {
         get => _health;
@@ -114,7 +125,8 @@ public partial class CardNode : Control
     /** Determines if card can do action in scuffle */
     public bool CanDoScuffleAction => !_hasActed && !_hasSummoningSickness;
 
-    public bool IsPlayable => _battleManager != null && _battleManager.CanPlayCard && _battleManager.Battle.PlayerHand.HasCard(this);
+    public bool IsPlayable => _battleManager != null && _battleManager.CanPlayCard &&
+                              _battleManager.Battle.PlayerHand.HasCard(this);
 
     /* Lifecycle methods */
     public override void _Ready()
@@ -124,7 +136,7 @@ public partial class CardNode : Control
         _InitializeUI();
         _UpdateUI();
     }
-    
+
     public override void _EnterTree()
     {
         GD.Print("Node added to scene tree");
@@ -133,11 +145,11 @@ public partial class CardNode : Control
         _UpdateUI();
         // Fire your event here
     }
-    
+
     public override void _ExitTree()
     {
         // Remove status effects tied to battle
-        
+
         // Disconnect signals, stop timers, cleanup
         _RemoveSubscriptions();
     }
@@ -145,11 +157,11 @@ public partial class CardNode : Control
     public void _InitializeBattleManager()
     {
         _battleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
-        
+
         // Add listener for Battle Manager to listen to this card.
         Connect(SignalName.TriggerAddCardToScuffle, new Callable(_battleManager, "PlayCard"));
     }
-    
+
     private void _InitializeUI()
     {
         _healthLabel = GetNode<Label>("CardArea/Stats/Health/Label");
@@ -158,9 +170,28 @@ public partial class CardNode : Control
         _cardNameLabel = GetNode<Label>("CardArea/NamePanel/Name");
         _summoningSicknessIcon = GetNode<Sprite2D>("CardArea/SummoningSicknessIcon");
         _animationPlayer = GetNode<AnimationPlayer>("CardArea/AnimationPlayer");
+        _actionButtonContainer = GetNode("CardArea/Actions");
+        if (_actionButtonContainer == null)
+            throw new Exception("Action button container not found");
         UpdateStatLabels();
         UpdateStatusIcons();
+        UpdateActionButtons();
+
+        var button = GetNode<Button>("CardArea/Stats/Shield");
+        button.Connect("mouse_entered", new Callable(this, nameof(OnButtonMouseEntered)));
+        button.Connect("mouse_exited", new Callable(this, nameof(OnButtonMouseExited)));
     }
+
+    private void OnButtonMouseEntered()
+    {
+        GD.Print("Mouse entered button");
+    }
+
+    private void OnButtonMouseExited()
+    {
+        GD.Print("Mouse exited button");
+    }
+
     private void _UpdateUI()
     {
         // Check if playable
@@ -191,11 +222,28 @@ public partial class CardNode : Control
     {
         CardName = data.CardName;
         Health = MaxHealth = data.MaxHealth;
-        Shield = MaxArmor = data.MaxArmor;
+        Shield = Shield = data.Shield;
         Power = data.Power;
         IsEnemy = data.IsEnemy;
-    }
 
+        // default actions - attack, shield (TODO - don't include if value 0)
+        var attackAction = CardManager.GetCardAction(CardActionType.Attack);
+        var shieldAction = CardManager.GetCardAction(CardActionType.Shield);
+        Actions.Add(attackAction);
+        Actions.Add(shieldAction);
+        if (data.Actions != null)
+        {
+            
+            foreach (var actionKey in data.Actions)
+            {
+                var action = CardManager.GetCardAction(actionKey);
+                // var button = CardManager.CreateActionButton(action);
+                Actions.Add(action);
+                // AddActionButton(button);
+            }
+        }
+    }
+    
     public void InitializeFromJson(string json)
     {
         CardData cardData = JsonSerializer.Deserialize<CardData>(json);
@@ -238,6 +286,11 @@ public partial class CardNode : Control
         _animationPlayer.Play(animationName);
         await ToSignal(_animationPlayer, AnimationPlayer.SignalName.AnimationFinished);
     }
+
+    private void AddActionButton(ActionButton actionButton)
+    {
+        _actionButtonContainer.AddChild(actionButton);
+    }
     
     private void UpdateCardNameLabel()
     {
@@ -277,6 +330,26 @@ public partial class CardNode : Control
         UpdateCardNameLabel();
     }
 
+    private void UpdateActionButtons()
+    {
+        var actionButtonsList = ActionButtons.ToList();
+        var actionButtonsToRemove = actionButtonsList.Where(actionButton => !Actions.Exists(action => action.Type == actionButton.ActionType));
+        var actionsToAdd = Actions.Where(action =>
+            !actionButtonsList.Exists(actionButton => actionButton.ActionType == action.Type));
+
+        foreach (var actionButton in actionButtonsToRemove)
+        {
+            _actionButtonContainer.RemoveChild(actionButton);
+            actionButton.QueueFree();
+        }
+
+        foreach (var action in actionsToAdd)
+        {
+            var actionButton = CardManager.CreateActionButton(action);
+            AddActionButton(actionButton);
+        }
+    }
+
     private void UpdateStatusIcons()
     {
         UpdateSummoningSicknessLabel();
@@ -303,11 +376,11 @@ public partial class CardNode : Control
         // TODO - make general card action function instead of hardcoding each one.
         GD.Print("Trigger shield action"); 
         GD.Print(SignalName.TriggerAddCardToScuffle);
-        _battleManager.PlayCardAction(new CardActionDetails
+        _battleManager.PlayCardAction(new CardActionEventDetails
         {
             CardNode = this,
             ActionType = CardActionType.Shield,
-            TargetsFriend = true
+            TargetsAlly = true
         });
     }
     
@@ -359,9 +432,10 @@ public class CardData
 {
     public string CardName { get; set; }
     public int MaxHealth { get; set; }
-    public int MaxArmor { get; set; }
+    public int Shield { get; set; }
     public int Power { get; set; }
     public bool IsEnemy { get; set; }
+    public CardActionType[] Actions { get; set; }
 }
 
 public class CardEnterScuffleDetails
@@ -370,17 +444,5 @@ public class CardEnterScuffleDetails
     public int BattleRound;
     public int PreviousCardsPlayed;
     public int PreviousCardsAddedToScuffle;
-}
-
-public class CardActionDetails
-{
-    public CardActionType ActionType;
-    public CardNode CardNode;
-    public bool TargetsFriend;
-}
-
-public enum CardActionType
-{
-    Shield
 }
 

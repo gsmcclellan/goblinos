@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Linq;
-using GoblinCardGame.scripts.Cards;
+using GoblinCardGame.Scripts.Cards;
 
 public partial class CardSlot : Panel
 {
@@ -12,7 +12,7 @@ public partial class CardSlot : Panel
 
     public override void _Ready()
     {
-        CustomMinimumSize = new Vector2(GoblinCardGame.scripts.GlobalSettings.CardWidth, GoblinCardGame.scripts.GlobalSettings.CardHeight);
+        CustomMinimumSize = new Vector2(GoblinCardGame.Scripts.GlobalSettings.CardWidth, GoblinCardGame.Scripts.GlobalSettings.CardHeight);
     }
 
     public CardNode AttachCard(CardNode cardNode, bool destroyExistingCard = false)

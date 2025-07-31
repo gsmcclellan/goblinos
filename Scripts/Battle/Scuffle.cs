@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using GoblinCardGame.scripts;
+using GoblinCardGame.Scripts.Actions;
 using GoblinCardGame.Scripts.CardContainers;
-using GoblinCardGame.scripts.Cards;
+using GoblinCardGame.Scripts.Cards;
 using Godot;
 
 namespace GoblinCardGame.Scripts.Battle;
@@ -160,11 +160,11 @@ public partial class Scuffle : CardContainers.CardContainer
         return null; // No targets found
     }
 
-    public CardNode GetCardActionTarget(CardActionDetails details)
+    public CardNode GetCardActionTarget(CardActionEventDetails details)
     {
         // enemy / friend
-        var targetsEnemy = details.CardNode.IsEnemy && details.TargetsFriend ||
-                           !details.CardNode.IsEnemy && !details.TargetsFriend;
+        var targetsEnemy = details.CardNode.IsEnemy && details.TargetsAlly ||
+                           !details.CardNode.IsEnemy && !details.TargetsAlly;
         // get last index matching -
         return Cards.LastOrDefault(potentialTarget => potentialTarget.IsEnemy == targetsEnemy);
 

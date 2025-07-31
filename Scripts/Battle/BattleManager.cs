@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
-using GoblinCardGame.scripts;
-using GoblinCardGame.scripts.Battle;
-using GoblinCardGame.scripts.Cards;
+using GoblinCardGame.Scripts;
+using GoblinCardGame.Scripts.Actions;
+using GoblinCardGame.Scripts.Cards;
 using Godot;
 
 namespace GoblinCardGame.Scripts.Battle;
@@ -22,12 +21,11 @@ public partial class BattleManager : Node
     [Signal] public delegate void ScuffleEndEventHandler(); // TODO - hook this event up 
     
     // Export properties
-    [Export] public scripts.Battle.Battle Battle;
+    [Export] public Battle Battle;
     [Export] private string _cardDataJsonPath = "res://data/test_cards.json";
     
     public BattlePlayer Player;
-    private PackedScene _cardScene = GD.Load<PackedScene>("res://nodes/card.tscn");
-    private Dictionary<string, CardData> _cardDataDict;
+    private PackedScene _cardScene = GD.Load<PackedScene>("res://Nodes/Card.tscn");
 
     private int _cardsPlayedThisTurn = 0;
     private int _cardsAddedToScuffleThisTurn;
@@ -56,12 +54,12 @@ public partial class BattleManager : Node
     public override void _Ready()
     {
         CallDeferred(nameof(_DeferredInit));
+        CardManager.LoadData();
     }
 
     private void _DeferredInit()
     {
         _InitializeBattleComponents();
-        _InitializeCardDataDict();
         _SetupSubscriptions();
         
         HandleStartOfBattle();
@@ -69,7 +67,7 @@ public partial class BattleManager : Node
 
     private void _InitializeBattleComponents()
     {
-        Battle = GetParent() as scripts.Battle.Battle;
+        Battle = GetParent() as Battle;
         if (Battle == null)
             throw new Exception("Battle component not found");
         
@@ -77,26 +75,6 @@ public partial class BattleManager : Node
         Battle.UserInterface._Init();
         
         Player = Battle.Player;
-    }
-    
-    private void _InitializeCardDataDict()
-    {
-        // Open JSON file
-        using var file = FileAccess.Open(_cardDataJsonPath, FileAccess.ModeFlags.Read);
-        if (file == null)
-        {
-            GD.PrintErr("Could not open test_data.json");
-            return;
-        }
-
-        string json = file.GetAsText();
-
-        // Deserialize dictionary<string, CardData>
-        _cardDataDict = JsonSerializer.Deserialize<Dictionary<string, CardData>>(json);
-        
-        if (_cardDataDict != null) return;
-        
-        GD.PrintErr("Failed to parse card dictionary");
     }
     
     private void OnTreeExiting()
@@ -118,7 +96,7 @@ public partial class BattleManager : Node
 
     public CardData CardData(string cardId)
     {
-        return _cardDataDict[cardId];
+        return CardManager.CardDataDatabase.Get(cardId);
     }
 
     public CardNode Card(CardData cardData)
@@ -130,12 +108,10 @@ public partial class BattleManager : Node
 
     public CardNode Card(string cardId)
     {
-        return Card(_cardDataDict[cardId]);
+        return Card(CardData(cardId));
     }
-
     
-
-    public CardNode GetTargetForCardAction(CardActionDetails details)
+    public CardNode GetTargetForCardAction(CardActionEventDetails details)
     {
         return Battle.Scuffle.GetCardActionTarget(details);
     }
@@ -206,7 +182,7 @@ public partial class BattleManager : Node
         PlayerActionsRemaining -= 1;
     }
     
-    public async Task PlayCardAction(CardActionDetails details)
+    public async Task PlayCardAction(CardActionEventDetails details)
     {
         if (PlayerActionsRemaining < 1) return;
         GD.Print("Resolve card action: ", this);
@@ -279,7 +255,7 @@ public partial class BattleManager : Node
     }
     public void HandleStartOfBattle()
     {
-        Battle.PlayerDeck.CreateStartingTestDeck(); // TODO - replace with loading deck from player's characters / party
+        CreatePlayerTestDeck(); // TODO - replace with loading deck from player's characters / party
         DrawUntil(GlobalSettings.PlayerStartingCards);
         CreateEnemyCards();
         
@@ -350,11 +326,18 @@ public partial class BattleManager : Node
 
     private void CreateEnemyCards()
     {
-        Battle.EnemyHand.AddCard(Card("soldier"));
-        while (Battle.EnemyHand.CanAddCard)
-        {
-        Battle.EnemyHand.AddCard(Card("soldier"));
-        }
+        CardData[] cardDataList = CardManager.ReadCardDataFromFileLocation("res://data/demo_enemy_starting_cards.txt");
+        CardNode[] cardNodeList = cardDataList.Select(Card).ToArray();
+
+        Battle.EnemyHand.AddCards(cardNodeList);
+    }
+
+    private void CreatePlayerTestDeck()
+    {
+        CardData[] cardDataList = CardManager.ReadCardDataFromFileLocation("res://data/demo_player_starting_cards.txt");
+        CardNode[] cardNodeList = cardDataList.Select(Card).ToArray();
+
+        Battle.PlayerDeck.AddCards(cardNodeList);
     }
 
     private void OnBreakButtonPressed()
