@@ -9,13 +9,19 @@
     "CardName": "Goblin Stabber",
     "MaxHealth": 10,
     "Shield": 4,
-    "Power": 12
+    "Power": 12,
+    "Actions": [
+      "Confuse"
+    ]
   },
   "goblin_shielder": {
     "CardName": "Goblin Shielder",
     "MaxHealth": 8,
     "Shield": 8,
-    "Power": 6
+    "Power": 6,
+    "Actions": [
+      "Assist"
+    ]
   },
   "goblin_sneak": {
     "CardName": "Goblin Sneak",
@@ -32,7 +38,8 @@
     "Shield": 0,
     "Power": 8,
     "Actions": [
-      "Snipe"
+      "Snipe",
+      "Assist"
     ]
   },
   "soldier": {

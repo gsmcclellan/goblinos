@@ -282,6 +282,7 @@ public partial class BattleManager : Node
         CardNode[] cardNodeList = cardDataList.Select(Card).ToArray();
 
         Battle.PlayerDeck.AddCards(cardNodeList);
+        Battle.PlayerDeck.ShuffleCards();
     }
 
     private void OnBreakButtonPressed()
