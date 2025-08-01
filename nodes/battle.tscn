@@ -29,6 +29,7 @@ script = ExtResource("3_gscff")
 position = Vector2(1605, 766)
 
 [node name="PlayerDrawButton" type="Button" parent="PlayerDeck"]
+visible = false
 offset_left = -71.0
 offset_top = 9.0
 offset_right = -21.0
@@ -84,6 +85,7 @@ offset_bottom = 678.0
 text = "0"
 
 [node name="Button" type="Button" parent="."]
+visible = false
 offset_left = 28.0
 offset_top = 974.0
 offset_right = 87.0

@@ -11,8 +11,12 @@
     "Shield": 4,
     "Power": 12,
     "Actions": [
-      "Confuse"
-    ]
+      "Assist"
+    ],
+    "SpriteRegion": {
+      "X": 0,
+      "Y": 0
+    }
   },
   "goblin_shielder": {
     "CardName": "Goblin Shielder",
@@ -21,7 +25,11 @@
     "Power": 6,
     "Actions": [
       "Assist"
-    ]
+    ],
+    "SpriteRegion": {
+      "X": 1,
+      "Y": 0
+    }
   },
   "goblin_sneak": {
     "CardName": "Goblin Sneak",
@@ -29,8 +37,13 @@
     "Shield": 0,
     "Power": 4,
     "Actions": [
-      "Sneak"
-    ]
+      "Sneak",
+      "Confuse"
+    ],
+    "SpriteRegion": {
+      "X": 3,
+      "Y": 0
+    }
   },
   "goblin_sniper": {
     "CardName": "Goblin Sniper",
@@ -40,28 +53,44 @@
     "Actions": [
       "Snipe",
       "Assist"
-    ]
+    ],
+    "SpriteRegion": {
+      "X": 2,
+      "Y": 0
+    }
   },
   "soldier": {
     "CardName": "Soldier",
     "MaxHealth": 20,
     "Shield": 10,
     "Power": 6,
-    "IsEnemy": true
+    "IsEnemy": true,
+    "SpriteRegion": {
+      "X": 4,
+      "Y": 0
+    }
   },
   "soldier_captain": {
     "CardName": "Captain",
     "MaxHealth": 20,
     "Shield": 10,
     "Power": 12,
-    "IsEnemy": true
+    "IsEnemy": true,
+    "SpriteRegion": {
+      "X": 7,
+      "Y": 0
+    }
   },
   "soldier_guard": {
     "CardName": "Guardsman",
     "MaxHealth": 12,
     "Shield": 8,
     "Power": 4,
-    "IsEnemy": true
+    "IsEnemy": true,
+    "SpriteRegion": {
+      "X": 6,
+      "Y": 0
+    }
   },
   "soldier_spearman": {
     "CardName": "Spearman",
@@ -70,7 +99,11 @@
     "Power": 6,
     "IsEnemy": true,
     "Actions": [],
-    "DamageType": ["FirstStrike"]
+    "DamageType": ["FirstStrike"],
+    "SpriteRegion": {
+      "X": 4,
+      "Y": 0
+    }
   },
   "soldier_crossbowman": {
     "CardName": "Crossbowman",
@@ -78,6 +111,10 @@
     "Shield": 2,
     "Power": 8,
     "IsEnemy": true,
-    "Actions": ["Assist"]
+    "Actions": ["Assist"],
+    "SpriteRegion": {
+      "X": 5,
+      "Y": 0
+    }
   }
 }

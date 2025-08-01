@@ -206,7 +206,7 @@ public partial class BattleManager : Node
         var playerGoesFirst = GD.Randf() < 0.5f;
         GD.Print("Player goes first: " + playerGoesFirst);
         if (!playerGoesFirst)
-            DoEnemyTurn();
+            DoEnemyTurn(true);
         HandleStartOfPlayerTurn(playerGoesFirst);
     }
 
@@ -232,8 +232,13 @@ public partial class BattleManager : Node
         Battle.PlayerDeck.Cards = playerCards;
         Battle.PlayerDeck.ShuffleCards();
         Battle.EnemyHand.Cards = enemyCards;
-
-        HandleStartOfPlayerTurn();
+        DrawUntil(GlobalSettings.PlayerStartingCards);
+        
+        var playerGoesFirst = GD.Randf() < 0.5f;
+        GD.Print("Player goes first: " + playerGoesFirst);
+        if (!playerGoesFirst)
+            DoEnemyTurn(true);
+        HandleStartOfPlayerTurn(playerGoesFirst);
     }
 
     /** Starts player turn, sets IsPlayerTurn to true & sets PlayerActionsRemaining */

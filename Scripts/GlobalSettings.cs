@@ -8,6 +8,9 @@ public partial class GlobalSettings : Node
     public const int CardWidth = 200;
     public const int CardHeight = 280;
 
+    public const int CardSpriteHeight = 16;
+    public const int CardSpriteWidth = 16;
+
     public const int ActionButtonHeight = 24;
     public const int ActionButtonWidth = 190;
 
@@ -20,7 +23,7 @@ public partial class GlobalSettings : Node
     public const int NumberOfCombatRounds = 2;
     public const int NumberOfSummoningSicknessRounds = 1;
 
-    public const int EnemyActionsPerTurn = 1;
+    public const int EnemyActionsPerTurn = 2;
     public const int EnemyCombatActionsBeforeSummoningSickness = 1;
 
     public const int PlayerActionsPerTurn = 2;

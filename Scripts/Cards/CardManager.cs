@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using GoblinCardGame.Scripts.Actions;
+using GoblinCardGame.Scripts.Utilities.Json;
 
 namespace GoblinCardGame.Scripts.Cards;
 
@@ -67,7 +68,10 @@ public class CardManager
             string json = file.GetAsText();
             var options = new JsonSerializerOptions
             {
-                Converters = { new JsonStringEnumConverter() }
+                Converters = {
+                    new JsonStringEnumConverter(), 
+                    new Vector2Converter()
+                }
             };
             _cardDataDict = JsonSerializer.Deserialize<Dictionary<string, CardData>>(json, options);
             _isLoaded = true;

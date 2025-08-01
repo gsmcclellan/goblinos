@@ -27,6 +27,7 @@ public partial class CardNode : Control
     [Export] private Sprite2D _summoningSicknessIcon;
     [Export] private AnimationPlayer _animationPlayer;
     [Export] private Node _actionButtonContainer;
+    [Export] private Sprite2D _cardImageSprite;
 
     /* Signals */
     // [Signal]
@@ -50,6 +51,8 @@ public partial class CardNode : Control
     private int _maxArmor;
     private int _maxHealth;
     private int _power;
+
+    private Vector2 _spriteRegion;
 
     /* Battle properties */
     private bool _hasSummoningSickness;
@@ -128,6 +131,17 @@ public partial class CardNode : Control
         }
     }
 
+    public Vector2 SpriteRegion
+    {
+        get => _spriteRegion;
+        set
+        {
+            
+            _spriteRegion = value;
+            UpdateSpriteRegion();
+        }
+    }
+
     /** Determines if card can do action in scuffle */
     public bool CanDoScuffleAction => !_hasActed && !_hasSummoningSickness;
     public bool IsInPlayerHand => _battleManager != null && _battleManager.Battle.PlayerHand.HasCard(this);
@@ -178,10 +192,12 @@ public partial class CardNode : Control
         _summoningSicknessIcon = GetNode<Sprite2D>("CardArea/SummoningSicknessIcon");
         _animationPlayer = GetNode<AnimationPlayer>("CardArea/AnimationPlayer");
         _actionButtonContainer = GetNode("CardArea/Actions");
+        _cardImageSprite = GetNode<Sprite2D>("CardArea/Image/Sprite2D");
         if (_actionButtonContainer == null)
             throw new Exception("Action button container not found");
         UpdateStatLabels();
         UpdateStatusIcons();
+        UpdateSpriteRegion();
         CreateAndRemoveActionButtons();
 
         var button = GetNode<Button>("CardArea/Stats/Shield");
@@ -231,6 +247,8 @@ public partial class CardNode : Control
         Shield = Shield = data.Shield;
         Power = data.Power;
         IsEnemy = data.IsEnemy;
+
+        SpriteRegion = data.SpriteRegion;
 
         // default actions - attack, shield (TODO - don't include if value 0)
         var attackAction = CardManager.GetCardAction(CardActionType.Attack);
@@ -332,6 +350,15 @@ public partial class CardNode : Control
         UpdateHealthLabel();
         UpdatePowerLabel();
         UpdateCardNameLabel();
+    }
+
+    private void UpdateSpriteRegion()
+    {
+        if (_cardImageSprite == null)
+            return;
+
+        _cardImageSprite.RegionEnabled = true;
+        _cardImageSprite.RegionRect = new Rect2(SpriteRegion.X * GlobalSettings.CardSpriteWidth, SpriteRegion.Y * GlobalSettings.CardSpriteHeight, GlobalSettings.CardSpriteWidth, GlobalSettings.CardSpriteHeight);
     }
 
     private void CreateAndRemoveActionButtons()
@@ -476,12 +503,21 @@ public partial class CardNode : Control
 
 public class CardData
 {
-    public string CardName { get; set; }
-    public int MaxHealth { get; set; }
-    public int Shield { get; set; }
-    public int Power { get; set; }
-    public bool IsEnemy { get; set; }
-    public CardActionType[] Actions { get; set; }
+    public string CardName { get; init; }
+    public int MaxHealth { get; init; }
+    public int Shield { get; init; }
+    public int Power { get; init; }
+    public bool IsEnemy { get; init; }
+    public CardActionType[] Actions { get; init; }
+    
+    public Vector2 SpriteRegion { get; init; }
+}
+
+public class CardSpriteDetails
+{
+    public string File { get; init; }
+    public Vector2 RegionIndex { get; init; }
+    public bool RegionEnabled { get; init; } = true;
 }
 
 public class CardEnterScuffleDetails
