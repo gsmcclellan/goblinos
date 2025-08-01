@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using GoblinCardGame.scripts;
-using GoblinCardGame.scripts.Cards;
+using GoblinCardGame.Scripts.Cards;
 using Godot;
 using Godot.Collections;
 
@@ -44,9 +43,10 @@ public partial class CardContainer : Control, ICardContainer
     protected void _UpdateCardPositions()
     {
         
-        Array<CardNode> cards = new Array<CardNode>(
-            GetChildren().OfType<CardNode>()
-        );
+        // Array<CardNode> cards = new Array<CardNode>(
+        //     GetChildren().OfType<CardNode>()
+        // );
+        var cards = CardList;
         int count = cards.Count;
 
         if (count == 0)
@@ -120,5 +120,19 @@ public partial class CardContainer : Control, ICardContainer
         }
 
         return cards;
+    }
+
+    public void MoveCardToIndex(CardNode card, int targetIndex = 0)
+    {
+        CardList.Remove(card);
+        CardList.Insert(targetIndex, card);
+        _UpdateCardPositions();
+    }
+
+    public void MoveCardToIndex(int fromIndex, int toIndex = 0)
+    {
+        CardNode card = CardList[fromIndex];
+        CardList.RemoveAt(fromIndex);
+        CardList.Insert(toIndex, card);
     }
 }

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using GoblinCardGame.scripts.Cards;
+using GoblinCardGame.Scripts.Cards;
 using Godot;
 
 namespace GoblinCardGame.Scripts.CardContainers;
@@ -19,6 +19,17 @@ public interface ICardContainer
     
     /* Methods */
     public bool AddCard(CardNode cardNode);
+
+    public bool AddCards(IEnumerable<CardNode> cardNodes)
+    {
+        var success = true;
+        foreach (var cardNode in cardNodes)
+        {
+            success = success && AddCard(cardNode);
+        }
+
+        return success;
+    }
     
     public bool HasCard(CardNode cardNode) => Cards.Contains(cardNode);
     

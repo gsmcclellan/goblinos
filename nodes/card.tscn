@@ -1,7 +1,9 @@
-[gd_scene load_steps=9 format=3 uid="uid://c6ldyd7qn0y7d"]
+[gd_scene load_steps=11 format=3 uid="uid://c6ldyd7qn0y7d"]
 
 [ext_resource type="Script" uid="uid://dpsg83xml3bfs" path="res://Scripts/Cards/CardNode.cs" id="1_alvoo"]
 [ext_resource type="Texture2D" uid="uid://co4iv8c4et158" path="res://assets/Spritesheet.png" id="2_7bg8k"]
+[ext_resource type="PackedScene" uid="uid://ch1irsouacwb3" path="res://Nodes/ActionButton.tscn" id="2_rgrtk"]
+[ext_resource type="Texture2D" uid="uid://cvv7klacv22om" path="res://assets/demo-sprites4goblin4soldier.png" id="3_rgrtk"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_b2440"]
 bg_color = Color(0.705474, 0.566541, 0.49552, 1)
@@ -11,7 +13,7 @@ bg_color = Color(0.22, 0.0242, 0.0242, 1)
 
 [sub_resource type="Animation" id="Animation_rgrtk"]
 resource_name = "Attacks"
-length = 0.4
+length = 0.6
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -19,7 +21,7 @@ tracks/0/path = NodePath("CardArea:modulate")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.2, 0.4),
+"times": PackedFloat32Array(0, 0.3, 0.6),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
 "values": [Color(1, 1, 1, 1), Color(0.9575, 1, 0.49, 1), Color(1, 1, 1, 1)]
@@ -27,7 +29,7 @@ tracks/0/keys = {
 
 [sub_resource type="Animation" id="Animation_alvoo"]
 resource_name = "IsAttacked"
-length = 0.4
+length = 0.6
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -35,7 +37,7 @@ tracks/0/path = NodePath("CardArea:modulate")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.2, 0.4),
+"times": PackedFloat32Array(0, 0.3, 0.6),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
 "values": [Color(1, 1, 1, 1), Color(1, 0, 0, 1), Color(1, 1, 1, 1)]
@@ -65,11 +67,7 @@ _data = {
 
 [node name="Card" type="Control"]
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+anchors_preset = 0
 script = ExtResource("1_alvoo")
 
 [node name="CardArea" type="Panel" parent="."]
@@ -94,13 +92,15 @@ offset_right = 194.0
 offset_bottom = 32.0
 text = "Card Name"
 
-[node name="Details" type="Panel" parent="CardArea"]
+[node name="Actions" type="VBoxContainer" parent="CardArea"]
 layout_mode = 0
 offset_left = 2.0
 offset_top = 158.0
-offset_right = 240.0
-offset_bottom = 264.0
-scale = Vector2(0.823892, 1.11855)
+offset_right = 197.0
+offset_bottom = 278.0
+
+[node name="ActionButton" parent="CardArea/Actions" instance=ExtResource("2_rgrtk")]
+layout_mode = 2
 
 [node name="Image" type="Panel" parent="CardArea"]
 layout_mode = 0
@@ -111,11 +111,12 @@ offset_bottom = 205.0
 scale = Vector2(0.77129, 0.698096)
 
 [node name="Sprite2D" type="Sprite2D" parent="CardArea/Image"]
+texture_filter = 1
 position = Vector2(94, 80)
-scale = Vector2(5, 5)
-texture = ExtResource("2_7bg8k")
+scale = Vector2(10, 10)
+texture = ExtResource("3_rgrtk")
 region_enabled = true
-region_rect = Rect2(511, 35, 14, 14)
+region_rect = Rect2(48, 0, 16, 16)
 
 [node name="Stats" type="Panel" parent="CardArea"]
 layout_mode = 0
@@ -203,11 +204,12 @@ libraries = {
 }
 
 [node name="PlayButton" type="Button" parent="."]
+visible = false
 layout_mode = 0
-offset_left = 139.0
-offset_top = 232.0
-offset_right = 180.0
-offset_bottom = 263.0
+offset_left = 200.0
+offset_top = 282.0
+offset_right = 241.0
+offset_bottom = 313.0
 text = "Play
 "
 
