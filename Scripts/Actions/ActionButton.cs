@@ -8,11 +8,11 @@ public partial class ActionButton : Button
 {
     /** Signals */
     [Signal]
-    public delegate void TriggerActionButtonPressedEventHandler(CardActionType actionType);
+    public delegate void ActionButtonPressedEventHandler(CardActionType actionType);
     
     /** Exported properties */
     
-    
+    /** properties */
     private Label _label;
     private Sprite2D _icon;
     private CardNode _cardNode;
@@ -30,11 +30,13 @@ public partial class ActionButton : Button
     }
 
     public bool IsAttack => ActionType == CardActionType.Attack;
+
+    public bool IsButtonVisible => _cardNode != null &&  _cardNode.IsInPlayerHand;
+    public bool IsEnabled => _cardNode != null && _cardNode.IsPlayable;
     public override void _Ready()
     {
         _label = GetNode<Label>("Label");
         _icon = GetNode<Sprite2D>("Icon");
-        _setParentCardNode();
         
         CustomMinimumSize = new Vector2(GoblinCardGame.Scripts.GlobalSettings.ActionButtonWidth, GoblinCardGame.Scripts.GlobalSettings.ActionButtonHeight);
         
@@ -43,24 +45,25 @@ public partial class ActionButton : Button
         _UpdateUI();
     }
 
-    public void Initialize(CardAction action)
+    public void Initialize(CardNode cardNode, CardAction action)
     {
+        _cardNode = cardNode;
         CardAction = action;
-    }
-    
-    private void _setParentCardNode()
-    {
-        Node current = GetParent();
-        while (current != null && _cardNode == null)
-        {
-            _cardNode = current as CardNode;
-            current = current.GetParent();
-        }
+
+        _UpdateUI();
+        ActionButtonPressed += _cardNode.TriggerAction;
+        _cardNode.TriggerUpdateCardActionButtons += _UpdateUI;
     }
 
-    private void _UpdateUI()
+    public void _UpdateUI()
     {
+        if (_cardNode == null)
+            return;
+        GD.Print($"Action button {ActionType} update UI - CardNode = {_cardNode.CardName}");
         _UpdateLabel();
+        Visible = IsButtonVisible;
+        Disabled = !IsEnabled;
+        GD.Print($"Visible: {Visible} Enabled: ${IsEnabled} Disabled: {Disabled}");
     }
 
     private void _UpdateLabel()
@@ -77,5 +80,17 @@ public partial class ActionButton : Button
     public void OnPressed()
     {
         GD.Print("Button pressed, trigger action");
+        if (ActionType != null)
+            EmitSignal(nameof(ActionButtonPressed), (int) ActionType.Value);
+    }
+
+    public void RemoveSubscriptions()
+    {
+        if (_cardNode != null)
+        {
+            _cardNode.TriggerUpdateCardActionButtons -= _UpdateUI;
+            ActionButtonPressed -= _cardNode.TriggerAction;
+        }
+            
     }
 }

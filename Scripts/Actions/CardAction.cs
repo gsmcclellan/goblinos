@@ -1,4 +1,5 @@
 
+#nullable enable
 using System.Collections.Generic;
 using GoblinCardGame.Scripts.Cards;
 
@@ -15,9 +16,13 @@ public class CardAction
 
 public class CardActionEventDetails
 {
+    public CardAction Action;
     public CardActionType ActionType;
     public CardNode CardNode;
+    public CardNode? Target;
     public bool TargetsAlly;
+
+    public bool DiscardAfterAction => ActionType != CardActionType.Attack;
 }
 
 public enum CardActionType

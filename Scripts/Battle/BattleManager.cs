@@ -110,12 +110,6 @@ public partial class BattleManager : Node
     {
         return Card(CardData(cardId));
     }
-    
-    public CardNode GetTargetForCardAction(CardActionEventDetails details)
-    {
-        return Battle.Scuffle.GetCardActionTarget(details);
-    }
-
     private void DoEnemyTurn(bool isFirstTurn = false)
     {
         _cardsPlayedThisTurn = 0;
@@ -153,57 +147,7 @@ public partial class BattleManager : Node
     }
     
     
-    public async void PlayCard(CardNode cardNode)
-    {
-        if (!Battle.Scuffle.CanAddCard) return;
-        
-        CardSlot cardSlot = cardNode.GetParent() as CardSlot;
-        cardSlot?.RemoveCard();
-        Battle.Scuffle.AddCard(cardNode);
-        
-
-        var cardEnterDetails = new CardEnterScuffleDetails
-        {
-            CardNode = cardNode,
-            BattleRound = _battleRound,
-            PreviousCardsPlayed = _cardsPlayedThisTurn,
-            PreviousCardsAddedToScuffle = _cardsAddedToScuffleThisTurn
-        };
-
-        _cardsPlayedThisTurn++;
-        _cardsAddedToScuffleThisTurn++;
-        
-        // Resolve things that trigger on card play - 
-        // TODO - scuffle cards do things
-        // TODO - hand cards do things?
-        
-        // Move this to be triggered by signal?
-        await cardNode.OnEnterScuffle(cardEnterDetails);
-        PlayerActionsRemaining -= 1;
-    }
     
-    public async Task PlayCardAction(CardActionEventDetails details)
-    {
-        if (PlayerActionsRemaining < 1) return;
-        GD.Print("Resolve card action: ", this);
-        switch (details.ActionType)
-        {
-            case CardActionType.Shield:
-                GD.Print("shielding");
-                // get target
-                var target = GetTargetForCardAction(details);
-                // carry out action
-                target.Shield += details.CardNode.Shield;
-                // discard card
-                DiscardCard(details.CardNode);
-                break;
-            default:
-                throw new NotImplementedException($"Card action type {details.ActionType} not implemented");
-        }
-
-        PlayerActionsRemaining -= 1;
-        _cardsPlayedThisTurn++;
-    }
 
     public void DiscardCard(CardNode cardNode)
     {

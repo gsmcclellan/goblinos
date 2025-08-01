@@ -22,17 +22,23 @@ public partial class CardNode : Control
     [Export] private Label _healthLabel;
     [Export] private Label _shieldLabel;
     [Export] private Label _powerLabel;
+    [Export] private Button _attackButton;
+    [Export] private Button _shieldButton;
     [Export] private Sprite2D _summoningSicknessIcon;
     [Export] private AnimationPlayer _animationPlayer;
     [Export] private Node _actionButtonContainer;
 
     /* Signals */
-    [Signal]
-    public delegate void TriggerAddCardToScuffleEventHandler(CardNode cardNode);
+    // [Signal]
+    // public delegate void TriggerAddCardToScuffleEventHandler(CardNode cardNode);
 
     [Signal]
-    public delegate void
-        CardEnterScuffleEventHandler(CardNode cardNode); // TODO - maybe this should be on scuffle element
+    public delegate void TriggerUpdateCardActionButtonsEventHandler();
+    [Signal]
+    public delegate void CardNodeUpdateUiEventHandler(CardNode cardNode);
+
+    [Signal]
+    public delegate void  CardEnterScuffleEventHandler(CardNode cardNode); // TODO - maybe this should be on scuffle element
 
     /* Subscriptions */
     private Callable _playerActionsChangedSubscription;
@@ -124,9 +130,8 @@ public partial class CardNode : Control
 
     /** Determines if card can do action in scuffle */
     public bool CanDoScuffleAction => !_hasActed && !_hasSummoningSickness;
-
-    public bool IsPlayable => _battleManager != null && _battleManager.CanPlayCard &&
-                              _battleManager.Battle.PlayerHand.HasCard(this);
+    public bool IsInPlayerHand => _battleManager != null && _battleManager.Battle.PlayerHand.HasCard(this);
+    public bool IsPlayable => _battleManager != null && IsInPlayerHand && _battleManager.CanPlayCard;
 
     /* Lifecycle methods */
     public override void _Ready()
@@ -151,7 +156,7 @@ public partial class CardNode : Control
         // Remove status effects tied to battle
 
         // Disconnect signals, stop timers, cleanup
-        _RemoveSubscriptions();
+        // _RemoveSubscriptions();
     }
 
     public void _InitializeBattleManager()
@@ -159,7 +164,7 @@ public partial class CardNode : Control
         _battleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
 
         // Add listener for Battle Manager to listen to this card.
-        Connect(SignalName.TriggerAddCardToScuffle, new Callable(_battleManager, "PlayCard"));
+        // Connect(SignalName.TriggerAddCardToScuffle, new Callable(_battleManager, "PlayCard"));
     }
 
     private void _InitializeUI()
@@ -167,6 +172,8 @@ public partial class CardNode : Control
         _healthLabel = GetNode<Label>("CardArea/Stats/Health/Label");
         _shieldLabel = GetNode<Label>("CardArea/Stats/Shield/Label");
         _powerLabel = GetNode<Label>("CardArea/Stats/Power/Label");
+        _attackButton = GetNode<Button>("CardArea/Stats/Power");
+        _shieldButton = GetNode<Button>("CardArea/Stats/Shield");
         _cardNameLabel = GetNode<Label>("CardArea/NamePanel/Name");
         _summoningSicknessIcon = GetNode<Sprite2D>("CardArea/SummoningSicknessIcon");
         _animationPlayer = GetNode<AnimationPlayer>("CardArea/AnimationPlayer");
@@ -175,7 +182,7 @@ public partial class CardNode : Control
             throw new Exception("Action button container not found");
         UpdateStatLabels();
         UpdateStatusIcons();
-        UpdateActionButtons();
+        CreateAndRemoveActionButtons();
 
         var button = GetNode<Button>("CardArea/Stats/Shield");
         button.Connect("mouse_entered", new Callable(this, nameof(OnButtonMouseEntered)));
@@ -194,10 +201,9 @@ public partial class CardNode : Control
 
     private void _UpdateUI()
     {
-        // Check if playable
-        Button button = GetNode<Button>("PlayButton");
-        GD.Print($"{CardName} is playable: {IsPlayable}");
-        if (button != null) button.Visible = IsPlayable;
+        GD.Print($"{CardName} update UI");
+        
+        _UpdateActionButtonsUI();
     }
     /** Sets up listeners for signals coming from BattleManager to update UI / status */
     private void _SetupSubscriptions()
@@ -237,9 +243,7 @@ public partial class CardNode : Control
             foreach (var actionKey in data.Actions)
             {
                 var action = CardManager.GetCardAction(actionKey);
-                // var button = CardManager.CreateActionButton(action);
                 Actions.Add(action);
-                // AddActionButton(button);
             }
         }
     }
@@ -330,8 +334,11 @@ public partial class CardNode : Control
         UpdateCardNameLabel();
     }
 
-    private void UpdateActionButtons()
+    private void CreateAndRemoveActionButtons()
     {
+        if (_actionButtonContainer == null)
+            return;
+        
         var actionButtonsList = ActionButtons.ToList();
         var actionButtonsToRemove = actionButtonsList.Where(actionButton => !Actions.Exists(action => action.Type == actionButton.ActionType));
         var actionsToAdd = Actions.Where(action =>
@@ -339,15 +346,37 @@ public partial class CardNode : Control
 
         foreach (var actionButton in actionButtonsToRemove)
         {
-            _actionButtonContainer.RemoveChild(actionButton);
-            actionButton.QueueFree();
+            RemoveActionButton(actionButton);
         }
 
         foreach (var action in actionsToAdd)
         {
-            var actionButton = CardManager.CreateActionButton(action);
+            var actionButton = CardManager.CreateActionButton(this, action);
             AddActionButton(actionButton);
         }
+
+        EmitSignal(nameof(TriggerUpdateCardActionButtons));
+    }
+
+    public void RemoveActionButton(ActionButton button)
+    {
+        button.RemoveSubscriptions();
+        _actionButtonContainer.RemoveChild(button);
+        button.QueueFree();
+    }
+
+    private void _UpdateActionButtonsUI()
+    {
+        // Check if playable
+        Button playButton = GetNode<Button>("PlayButton");
+         if (playButton != null) playButton.Visible = IsPlayable;
+                // TODO - update shield button too
+        if (_attackButton != null)
+            _attackButton.Disabled = !IsPlayable;
+        if (_shieldButton != null)
+            _shieldButton.Disabled = !IsPlayable;
+        
+        EmitSignal(nameof(TriggerUpdateCardActionButtons));
     }
 
     private void UpdateStatusIcons()
@@ -358,16 +387,17 @@ public partial class CardNode : Control
     /* Event callbacks */
     public void OnPlayButtonPressed()
     {
+        // TODO - remove this button
         if (!IsPlayable) return;
         GD.Print("Play this card: ", this);
-        EmitSignal(SignalName.TriggerAddCardToScuffle, this);
+        // EmitSignal(SignalName.TriggerAddCardToScuffle, this);
     }
 
     public void TriggerAddToScuffle()
     {
         if (!IsPlayable) return;
-        GD.Print("Trigger add card to scuffle", this);
-        EmitSignal(SignalName.TriggerAddCardToScuffle, this);
+        GD.Print("Trigger add card to scuffle ", CardName);
+        // EmitSignal(SignalName.TriggerAddCardToScuffle, this);
     }
 
     public void TriggerShieldAction()
@@ -375,12 +405,28 @@ public partial class CardNode : Control
         if (!IsPlayable) return;
         // TODO - make general card action function instead of hardcoding each one.
         GD.Print("Trigger shield action"); 
-        GD.Print(SignalName.TriggerAddCardToScuffle);
         _battleManager.PlayCardAction(new CardActionEventDetails
         {
             CardNode = this,
             ActionType = CardActionType.Shield,
             TargetsAlly = true
+        });
+    }
+
+    public void TriggerAction(CardActionType actionType)
+    {
+        // Get action
+        CardAction action = Actions.FirstOrDefault(cardAction => cardAction.Type == actionType);
+        if (action == null)
+            throw new Exception("Card does not contain action of triggered type");
+        
+        _battleManager.PlayCardAction(new CardActionEventDetails
+        {
+            Action = action,
+            ActionType = actionType,
+            CardNode = this,
+            TargetsAlly = action.TargetsAlly
+            // TODO - add target
         });
     }
     

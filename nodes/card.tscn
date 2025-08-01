@@ -12,7 +12,7 @@ bg_color = Color(0.22, 0.0242, 0.0242, 1)
 
 [sub_resource type="Animation" id="Animation_rgrtk"]
 resource_name = "Attacks"
-length = 0.4
+length = 0.6
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -20,7 +20,7 @@ tracks/0/path = NodePath("CardArea:modulate")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.2, 0.4),
+"times": PackedFloat32Array(0, 0.3, 0.6),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
 "values": [Color(1, 1, 1, 1), Color(0.9575, 1, 0.49, 1), Color(1, 1, 1, 1)]
@@ -28,7 +28,7 @@ tracks/0/keys = {
 
 [sub_resource type="Animation" id="Animation_alvoo"]
 resource_name = "IsAttacked"
-length = 0.4
+length = 0.6
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -36,7 +36,7 @@ tracks/0/path = NodePath("CardArea:modulate")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.2, 0.4),
+"times": PackedFloat32Array(0, 0.3, 0.6),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
 "values": [Color(1, 1, 1, 1), Color(1, 0, 0, 1), Color(1, 1, 1, 1)]
@@ -66,11 +66,7 @@ _data = {
 
 [node name="Card" type="Control"]
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+anchors_preset = 0
 script = ExtResource("1_alvoo")
 
 [node name="CardArea" type="Panel" parent="."]

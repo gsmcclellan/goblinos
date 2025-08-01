@@ -93,15 +93,15 @@ public class CardManager
         return CardActionDatabase.Get(actionKey);
     }
     
-    public static ActionButton CreateActionButton(CardActionType actionType)
+    public static ActionButton CreateActionButton(CardNode cardNode, CardActionType actionType)
     {
-        return CreateActionButton(GetCardAction(actionType));
+        return CreateActionButton(cardNode, GetCardAction(actionType));
     }
 
-    public static ActionButton CreateActionButton(CardAction action)
+    public static ActionButton CreateActionButton(CardNode cardNode, CardAction action)
     {
         var button = _actionButtonScene.Instantiate<ActionButton>();
-        button.Initialize(action);
+        button.Initialize(cardNode, action);
         return button;
     }
 

@@ -57,13 +57,7 @@ public partial class Scuffle : CardContainers.CardContainer
             // Do damage
             if (target != null)
             {
-                await currentCardNode.Attack(target);
-                // TODO - attack animation
-                await ToSignal(GetTree().CreateTimer(delaySeconds), "timeout");
-                    
-                // If killed, remove card
-                if (target.Health < 0)
-                    KillCard(target);
+                await CardAttack(currentCardNode, target);
             }
             else
             {
@@ -79,6 +73,16 @@ public partial class Scuffle : CardContainers.CardContainer
             else 
                 actedCards.Add(currentCardNode);
         } while (HasNext(currentCardNode));
+    }
+
+    public async Task CardAttack(CardNode attacker, CardNode target)
+    {
+        await attacker.Attack(target);
+        // TODO - attack animation
+                    
+        // If killed, remove card
+        if (target.Health <= 0)
+            KillCard(target);
     }
 
     /** Do things that happen on scuffle round start. Including callback for each card*/
