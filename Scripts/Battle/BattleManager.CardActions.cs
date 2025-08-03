@@ -4,6 +4,7 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using GoblinCardGame.Scripts.Actions;
 using GoblinCardGame.Scripts.Cards;
+using GoblinCardGame.Scripts.Cards.Classes;
 using Godot;
 
 namespace GoblinCardGame.Scripts.Battle;
@@ -60,7 +61,7 @@ public partial class BattleManager
                     // get target
                     var target = GetTargetForCardAction(details);
                     // carry out action
-                    target.Shield += details.CardNode.Shield;
+                    target.AddStat(StatName.Shield, details.CardNode.Shield); // TODO - change to modifier
                     // discard card
                     break;
                 case CardActionType.Sneak:
@@ -135,6 +136,6 @@ public partial class BattleManager
     {
         var target = GetScuffleTarget(details);
 
-        target.Power += details.CardNode.Power;
+        target.AddStat(StatName.Power, details.CardNode.Power); // TODO - change to modifier
     }
 }

@@ -56,7 +56,7 @@ public partial class Battle : Node2D
         GD.Print("PlayerDrawButton found: ", button != null);
 
         // Optional: connect signal manually to verify
-        button.Connect("pressed", new Callable(this, nameof(OnPlayerDrawButtonPressed)));
+        // button.Connect("pressed", new Callable(this, nameof(OnPlayerDrawButtonPressed)));
         
         BattleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
         UserInterface = GetNode<BattleUserInterface>(GlobalSettings.BattleUserInterfacePath);

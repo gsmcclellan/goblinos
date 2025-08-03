@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using GoblinCardGame.Scripts;
 using GoblinCardGame.Scripts.Actions;
 using GoblinCardGame.Scripts.Cards;
+using GoblinCardGame.Scripts.Utilities.Actions;
 using Godot;
 
 namespace GoblinCardGame.Scripts.Battle;
@@ -19,6 +20,13 @@ public partial class BattleManager : Node
     [Signal] public delegate void ScuffleRoundStartEventHandler(int roundNumber); // TODO - hook this event up 
     [Signal] public delegate void ScuffleRoundEndEventHandler(int roundNumber); // TODO - hook this event up 
     [Signal] public delegate void ScuffleEndEventHandler(); // TODO - hook this event up 
+
+    // event handlers
+    private Scuffle.ScuffleStartEventHandler _scuffleStartHandler;
+    private Scuffle.ScuffleRoundStartEventHandler _scuffleRoundStartHandler;
+    private Scuffle.ScuffleRoundEndEventHandler _scuffleRoundEndHandler;
+    private Scuffle.ScuffleEndEventHandler _scuffleEndHandler;
+    private readonly SubscriptionManager _subscriptionManager = new();
     
     // Export properties
     [Export] public Battle Battle;
@@ -57,6 +65,16 @@ public partial class BattleManager : Node
         CardManager.LoadData();
     }
 
+    public override void _ExitTree()
+    {
+        Battle.Scuffle.RemoveAllCards(true);
+        Battle.PlayerHand.RemoveAllCards(true);
+        Battle.EnemyHand.RemoveAllCards(true);
+        Battle.PlayerDeck.Cleanup();
+        _RemoveSubscriptions();
+        base._ExitTree();
+    }
+
     private void _DeferredInit()
     {
         _InitializeBattleComponents();
@@ -76,22 +94,49 @@ public partial class BattleManager : Node
         
         Player = Battle.Player;
     }
-    
-    private void OnTreeExiting()
-    {
-        Battle.Scuffle.RemoveAllCards(true);
-        Battle.PlayerHand.RemoveAllCards(true);
-        Battle.EnemyHand.RemoveAllCards(true);
-        Battle.PlayerDeck.Cleanup();
-    }
 
 
     private void _SetupSubscriptions()
     {
-        //Player.IsPlayerTurnChanged += isPlayerTurn => { EmitSignal(nameof(IsPlayerTurnChanged), isPlayerTurn); };
-        Player.PlayerActionsRemainingChanged += (int newValue, int oldValue) => { EmitSignal(nameof(PlayerActionsRemainingChanged), newValue, oldValue); };
-        Player.PlayerTurnStart += () => { EmitSignal(nameof(PlayerTurnStart)); };
-        Player.PlayerTurnEnd += () => { EmitSignal(nameof(PlayerTurnEnd)); };
+        // Scuffle events
+        _scuffleStartHandler = () => { EmitSignal(nameof(ScuffleStart)); };
+        Battle.Scuffle.ScuffleStart += _scuffleStartHandler;
+        _scuffleRoundStartHandler = (int roundNumber) => { EmitSignal(nameof(ScuffleRoundStart), roundNumber); };
+        Battle.Scuffle.ScuffleRoundStart += _scuffleRoundStartHandler;
+        _scuffleRoundEndHandler = (int roundNumber) => { EmitSignal(nameof(ScuffleRoundEnd), roundNumber); };
+        Battle.Scuffle.ScuffleRoundEnd += _scuffleRoundEndHandler;
+        _scuffleEndHandler = () => { EmitSignal(nameof(ScuffleEnd)); };
+        Battle.Scuffle.ScuffleEnd += _scuffleEndHandler;
+        
+        // Player events
+        _subscriptionManager.Subscribe(
+            h => Player.PlayerActionsRemainingChanged += h,
+            h => Player.PlayerActionsRemainingChanged -= h,
+            (int newVal, int oldVal) => { EmitSignal(nameof(PlayerActionsRemainingChanged), newVal, oldVal); }
+        );
+
+        _subscriptionManager.Subscribe(
+            h => Player.PlayerTurnStart += h,
+            h => Player.PlayerTurnStart -= h,
+            () => { EmitSignal(nameof(PlayerTurnStart)); }
+        );
+
+        _subscriptionManager.Subscribe(
+            h => Player.PlayerTurnEnd += h,
+            h => Player.PlayerTurnEnd -= h,
+            () => { EmitSignal(nameof(PlayerTurnEnd)); }
+        );
+    }
+
+    private void _RemoveSubscriptions()
+    {
+        // Scuffle Events
+        Battle.Scuffle.ScuffleStart -= _scuffleStartHandler;
+        Battle.Scuffle.ScuffleRoundStart -= _scuffleRoundStartHandler;
+        Battle.Scuffle.ScuffleRoundEnd -= _scuffleRoundEndHandler;
+        Battle.Scuffle.ScuffleEnd -= _scuffleEndHandler;
+        
+        _subscriptionManager.Clear();
     }
 
     public CardData CardData(string cardId)
