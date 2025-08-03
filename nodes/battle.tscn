@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://dykelyrr5nk7u"]
+[gd_scene load_steps=8 format=3 uid="uid://bt58tyu2ek52v"]
 
 [ext_resource type="Script" uid="uid://dw384y3qscd2i" path="res://Scripts/Battle/Battle.cs" id="1_gscff"]
 [ext_resource type="PackedScene" uid="uid://b2a35fcj8tkoe" path="res://Nodes/CardRow.tscn" id="2_gscff"]

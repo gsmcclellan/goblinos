@@ -5,12 +5,19 @@ using System.Threading.Tasks;
 using GoblinCardGame.Scripts.Actions;
 using GoblinCardGame.Scripts.CardContainers;
 using GoblinCardGame.Scripts.Cards;
+using GoblinCardGame.Scripts.Utilities.Actions;
 using Godot;
 
 namespace GoblinCardGame.Scripts.Battle;
 
 public partial class Scuffle : CardContainers.CardContainer
 {
+    /** Signals */
+    [Signal] public delegate void ScuffleStartEventHandler(); // TODO - hook this event up 
+    [Signal] public delegate void ScuffleRoundStartEventHandler(int roundNumber); // TODO - hook this event up 
+    [Signal] public delegate void ScuffleRoundEndEventHandler(int roundNumber); // TODO - hook this event up 
+    [Signal] public delegate void ScuffleEndEventHandler(); // TODO - hook this event up 
+    
     private BattleManager _battleManager;
     
     public override void _Ready()
@@ -19,21 +26,24 @@ public partial class Scuffle : CardContainers.CardContainer
     }
     public async Task DoBattle()
     {
+        EmitSignal(nameof(ScuffleStart));
         var numCombatRounds = GlobalSettings.NumberOfCombatRounds;
         for (var i = 0; i < numCombatRounds; i++)
         {
             GD.Print($"Round {i + 1} of {GlobalSettings.NumberOfCombatRounds}");
             await DoBattleRoundAsync(i, numCombatRounds);
         }
+        EmitSignal(nameof(ScuffleEnd));
     }
     
     private async Task DoBattleRoundAsync (int roundNumber, int numberOfRounds, float delaySeconds = 0.5f)
     {
-        await OnScuffleRoundStart(new ScuffleRoundStartDetails
+        var scuffleEventDetails = new ScuffleRoundEventDetails
         {
             RoundNumber = roundNumber,
             NumberOfRounds = numberOfRounds
-        });
+        };
+        await OnScuffleRoundStart(scuffleEventDetails);
         var actedCards = new HashSet<CardNode>(); // if current card dies, get next card by iterating list until you find one that hasn't acted
         CardNode currentCardNode = null;
         do
@@ -73,6 +83,8 @@ public partial class Scuffle : CardContainers.CardContainer
             else 
                 actedCards.Add(currentCardNode);
         } while (HasNext(currentCardNode));
+
+        await OnScuffleRoundEnd(scuffleEventDetails);
     }
 
     public async Task CardAttack(CardNode attacker, CardNode target)
@@ -86,8 +98,10 @@ public partial class Scuffle : CardContainers.CardContainer
     }
 
     /** Do things that happen on scuffle round start. Including callback for each card*/
-    public async Task OnScuffleRoundStart(ScuffleRoundStartDetails details)
+    public async Task OnScuffleRoundStart(ScuffleRoundEventDetails details)
     {
+        EmitSignal(nameof(ScuffleRoundStart), details.RoundNumber);
+        
         // TODO - round start animation
         foreach (var cardNode in Cards)
         {
@@ -96,9 +110,9 @@ public partial class Scuffle : CardContainers.CardContainer
     }
 
     /** Do things that happen on scuffle round end. Including callback for each card*/
-    public async Task OnScuffleRoundEnd()
+    public async Task OnScuffleRoundEnd(ScuffleRoundEventDetails details)
     {
-        
+        EmitSignal(nameof(ScuffleRoundEnd), details.RoundNumber);
     }
 
     private bool HasNext(CardNode cardNode)
@@ -195,7 +209,7 @@ public partial class Scuffle : CardContainers.CardContainer
     }
 }
 
-public class ScuffleRoundStartDetails
+public class ScuffleRoundEventDetails
 {
     public int RoundNumber; // starting with 0
     public int NumberOfRounds; // total rounds to be done in scuffle

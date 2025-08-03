@@ -7,6 +7,7 @@ using GoblinCardGame.Scripts.Actions;
 using Godot;
 
 using GoblinCardGame.Scripts.Battle;
+using GoblinCardGame.Scripts.Cards.Classes;
 using BattleManager = GoblinCardGame.Scripts.Battle.BattleManager;
 
 namespace GoblinCardGame.Scripts.Cards;
@@ -46,12 +47,7 @@ public partial class CardNode : Control
 
     /* Private properties */
     private string _cardName = "Card Name";
-    private int _shield;
-    private int _health;
-    private int _maxArmor;
-    private int _maxHealth;
-    private int _power;
-
+    private CharacterStats _stats;
     private Vector2 _spriteRegion;
 
     /* Battle properties */
@@ -79,48 +75,10 @@ public partial class CardNode : Control
         }
     }
 
-    public int Shield
-    {
-        get => _shield;
-        set
-        {
-            _shield = value;
-            UpdateShieldLabel();
-        }
-    }
-
-    public int Health
-    {
-        get => _health;
-        set
-        {
-            _health = value;
-            UpdateHealthLabel();
-        }
-    }
-
-    public int MaxArmor
-    {
-        get { return _maxArmor; }
-        set { _maxArmor = value; }
-    }
-
-    public int MaxHealth
-    {
-        get => _maxHealth;
-        set => _maxHealth = value;
-    }
-
-    public int Power
-    {
-        get { return _power; }
-        set
-        {
-            _power = value;
-            UpdatePowerLabel();
-        }
-    }
-
+    public int Health => (int)GetStat("Health");
+    public int Shield => (int)GetStat("Shield");
+    public int Power => (int)GetStat("Power");
+    
     public bool HasSummoningSickness
     {
         get => _hasSummoningSickness;
@@ -150,14 +108,15 @@ public partial class CardNode : Control
     /* Lifecycle methods */
     public override void _Ready()
     {
-        _InitializeBattleManager();
-        _SetupSubscriptions();
         _InitializeUI();
         _UpdateUI();
     }
 
     public override void _EnterTree()
     {
+        _InitializeBattleManager();
+        _SetupSubscriptions();
+        _SetupSubscriptions();
         GD.Print("Node added to scene tree");
         foreach (Node child in GetChildren())
             GD.Print(child.Name, " - ", child.GetType().Name);
@@ -170,15 +129,12 @@ public partial class CardNode : Control
         // Remove status effects tied to battle
 
         // Disconnect signals, stop timers, cleanup
-        // _RemoveSubscriptions();
+        _RemoveSubscriptions();
     }
 
     public void _InitializeBattleManager()
     {
         _battleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
-
-        // Add listener for Battle Manager to listen to this card.
-        // Connect(SignalName.TriggerAddCardToScuffle, new Callable(_battleManager, "PlayCard"));
     }
 
     private void _InitializeUI()
@@ -204,6 +160,52 @@ public partial class CardNode : Control
         button.Connect("mouse_entered", new Callable(this, nameof(OnButtonMouseEntered)));
         button.Connect("mouse_exited", new Callable(this, nameof(OnButtonMouseExited)));
     }
+    
+    public object GetStat(string statName)
+    {
+        var prop = _stats.GetType().GetProperty(statName);
+        if (prop == null)
+            throw new Exception($"Stat {statName} not found");
+        
+        return prop.GetValue(_stats);
+    }
+
+    public void SetStat(string statName, int value)
+    {
+        var prop = _stats.GetType().GetProperty(statName);
+        if (prop == null)
+            throw new Exception($"Stat {statName} not found");
+        prop.SetValue(_stats, value);
+        
+        UpdateStatLabels(); // TODO - normalize names so I can call UpdateStatLabel(statName)
+    }
+    public void AddStat(StatName statName, object value)
+    {
+        _stats.AddTempStat(statName, value);
+        
+        UpdateStatLabels(); // TODO - normalize names so I can call UpdateStatLabel(statName)
+    }
+
+    public void SubtractStat(StatName statName, object value)
+    {
+        switch (value)
+        {
+            case int i:
+                AddStat(statName, -i);
+                break;
+            case float f:
+                AddStat(statName, -f);
+                break;
+            case double d:
+                AddStat(statName, -d);
+                break;
+            case long l:
+                AddStat(statName, -l);
+                break;
+            default:
+                throw new ArgumentException(@"Unsupported value type", nameof(value));
+        }
+    }
 
     private void OnButtonMouseEntered()
     {
@@ -217,35 +219,44 @@ public partial class CardNode : Control
 
     private void _UpdateUI()
     {
-        GD.Print($"{CardName} update UI");
-        
         _UpdateActionButtonsUI();
     }
     /** Sets up listeners for signals coming from BattleManager to update UI / status */
     private void _SetupSubscriptions()
     {
         // Update UI when PlayerActionsRemainingChanged fires - if no more actions, cards become unplayable
-        _playerActionsChangedSubscription = Callable.From((int _, int _) => _UpdateUI());
-        _battleManager.Connect("PlayerActionsRemainingChanged", _playerActionsChangedSubscription);
-        
+        _battleManager.PlayerActionsRemainingChanged += OnPlayerActionsRemainingChanged;
+        _battleManager.ScuffleEnd += OnScuffleEndEvent;
     }
 
     private void _RemoveSubscriptions()
     {
-        if (_battleManager?.IsConnected("PlayerActionsRemainingChanged", _playerActionsChangedSubscription) == true)
-        {
-            _battleManager.Disconnect("PlayerActionsRemainingChanged", _playerActionsChangedSubscription);
-        }
-            
+        _battleManager.PlayerActionsRemainingChanged -= OnPlayerActionsRemainingChanged;
+        _battleManager.ScuffleEnd -= OnScuffleEndEvent;
     }
-    
+
+    private void OnPlayerActionsRemainingChanged(int newValue, int oldValue)
+    {
+        _UpdateUI();
+    }
+
+    private void OnScuffleEndEvent()
+    {
+        GD.Print($"scuffle end - reset temp stats for {CardName}");
+        _stats.ResetTempStats();
+        _UpdateUI();
+    }
 
     public void InitializeFromCardData(CardData data)
     {
         CardName = data.CardName;
-        Health = MaxHealth = data.MaxHealth;
-        Shield = Shield = data.Shield;
-        Power = data.Power;
+        _stats = new CharacterStats
+        {
+            BaseMaxHealth = data.MaxHealth,
+            Health = data.MaxHealth,
+            BaseShield = data.Shield,
+            BasePower = data.Power
+        };
         IsEnemy = data.IsEnemy;
 
         SpriteRegion = data.SpriteRegion;
@@ -289,7 +300,7 @@ public partial class CardNode : Control
         throw new NotImplementedException("Card entered function not implemented");
     }
 
-    public async Task OnScuffleRoundStart(ScuffleRoundStartDetails details)
+    public async Task OnScuffleRoundStart(ScuffleRoundEventDetails details)
     {
         _hasActed = false;
         if (details.RoundNumber + 1 > GlobalSettings.NumberOfSummoningSicknessRounds)
@@ -306,7 +317,7 @@ public partial class CardNode : Control
         if (_animationPlayer == null)
             throw new Exception("Unable to access animation player");
         _animationPlayer.Play(animationName);
-        await ToSignal(_animationPlayer, AnimationPlayer.SignalName.AnimationFinished);
+        await ToSignal(_animationPlayer, AnimationMixer.SignalName.AnimationFinished);
     }
 
     private void AddActionButton(ActionButton actionButton)
@@ -323,7 +334,7 @@ public partial class CardNode : Control
     private void UpdateShieldLabel()
     {
         if (_shieldLabel != null)
-            _shieldLabel.Text = _shield.ToString();
+            _shieldLabel.Text = GetStat("Shield").ToString();
     }
 
     private void UpdateSummoningSicknessLabel()
@@ -335,13 +346,13 @@ public partial class CardNode : Control
     private void UpdateHealthLabel()
     {
         if (_healthLabel != null)
-            _healthLabel.Text = _health.ToString();
+            _healthLabel.Text = GetStat("Health").ToString();
     }
 
     private void UpdatePowerLabel()
     {
         if (_powerLabel != null)
-            _powerLabel.Text = _power.ToString();
+            _powerLabel.Text = GetStat("Power").ToString();
     }
 
     private void UpdateStatLabels()
@@ -471,7 +482,7 @@ public partial class CardNode : Control
     {
         await PlayAnimationAsync("Attacks");
         // Get damage
-        var damage = Power;
+        var damage = (int) GetStat("Power");
         // Assign damage to shield first then health
         // var remainingHealth = card.Health - damage;
         
@@ -479,24 +490,18 @@ public partial class CardNode : Control
         _hasActed = true;
         
         // TODO - battle logging
-        GD.Print($"{CardName} attacks {cardNode.CardName} for {damage} damage. {cardNode.Health} health remaining");
+        GD.Print($"{CardName} attacks {cardNode.CardName} for {damage} damage. {cardNode.GetStat("Health")} health remaining");
     }
 
     public async Task TakeDamage(int damage)
     {
         // Play animation
         var animationTask = PlayAnimationAsync("IsAttacked");
-        // Assign damage to shield first then health
-        if (Shield >= damage)
-            Shield -= damage;
-        else if (Shield > 0)
-        {
-            Health -= damage - Shield;
-            Shield = 0;
-        }
-        else
-            Health -= damage;
-
+        
+        _stats.TakeDamage(damage);
+        UpdateHealthLabel();
+        UpdateShieldLabel();
+        
         await animationTask;
     }
 }
