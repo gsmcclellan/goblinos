@@ -74,7 +74,7 @@ public class CharacterStats
             {
                 StatChanged?.Invoke(new StatChangedEventDetails
                 {
-                    StatName = statName,
+                    Stat = statName,
                     OldValue = existingStatValue,
                     NewValue = newStatValue
                 });
@@ -85,22 +85,28 @@ public class CharacterStats
         return remainingDamage;
     }
 
-    public void AddTempStat(StatName statName, object value)
+    public void AddTempStat(StatName statName, int value)
     {
+        var fullProp = GetType().GetProperty(statName.ToString());
         var prop = GetType().GetProperty("Temp" + statName);
-        if (prop == null)
+        
+        if (prop == null || fullProp == null)
             throw new Exception($"Stat {statName} not found");
         
-        var currentValue = prop.GetValue(this);
-        if (currentValue == null)
-            throw new Exception($"Stat {statName} value is null");
         
-        var propType = prop.PropertyType;
-        var convertedValue  = Convert.ChangeType(value, propType);
+        var currentFullValue = (int)(fullProp.GetValue(this) ?? 0);
+        var currentValue = (int)(prop.GetValue(this) ?? 0);
+
+        int newValue = currentValue + value;
+        prop.SetValue(this, newValue);
+        var newFullValue = (int)(fullProp.GetValue(this) ?? 0);
         
-        dynamic currentDynamic = currentValue;
-        dynamic addDynamic = convertedValue;
-        prop.SetValue(this, currentDynamic + addDynamic);
+        StatChanged?.Invoke(new StatChangedEventDetails
+        {
+            NewValue = newFullValue,
+            OldValue = currentFullValue,
+            Stat = statName
+        });
     }
 }
 
@@ -141,7 +147,7 @@ public enum StatModifierType
 
 public class StatChangedEventDetails
 {
-    public StatName StatName { get; init; }
-    public object OldValue { get; init; }
-    public object NewValue { get; init; }
+    public StatName Stat { get; init; }
+    public int OldValue { get; init; }
+    public int NewValue { get; init; }
 }

@@ -1,31 +1,37 @@
 {
   "Attack": {
     "Text": "Enter Scuffle",
+    "Stat": null,
     "Icon": "",
     "TargetsAlly": false
   },
   "Shield": {
     "Text": "Shield",
+    "Stat": "Shield",
     "Icon": "",
     "TargetsAlly": true
   },
   "Sneak": {
     "Text": "Sneak",
+    "Stat": null,
     "Icon": "",
     "TargetsAlly": true
   },
   "Snipe": {
     "Text": "Pot Shot",
+    "Stat": "Power",
     "Icon": "",
     "TargetsAlly": false
   },
   "Assist": {
     "Text": "Assist",
+    "Stat": "Power",
     "Icon": "",
     "TargetsAlly": true
   },
   "Confuse": {
     "Text": "Confuse",
+    "Stat": null,
     "Icon": "",
     "TargetsAlly": false
   }
