@@ -15,18 +15,15 @@ public partial class BattleManager : Node
 {
     // Signals
     [Signal] public delegate void PlayerActionsRemainingChangedEventHandler(int newValue, int oldValue);
-    [Signal] public delegate void PlayerTurnStartEventHandler(); // TODO - hook this event up 
-    [Signal] public delegate void PlayerTurnEndEventHandler(); // TODO - hook this event up 
-    [Signal] public delegate void ScuffleStartEventHandler(); // TODO - hook this event up 
-    [Signal] public delegate void ScuffleRoundStartEventHandler(int roundNumber); // TODO - hook this event up 
-    [Signal] public delegate void ScuffleRoundEndEventHandler(int roundNumber); // TODO - hook this event up 
-    [Signal] public delegate void ScuffleEndEventHandler(); // TODO - hook this event up 
+    [Signal] public delegate void IsPlayerTurnChangedEventHandler(bool isPlayerTurn);
+    [Signal] public delegate void PlayerTurnStartEventHandler();
+    [Signal] public delegate void PlayerTurnEndEventHandler();
+    [Signal] public delegate void ScuffleStartEventHandler();
+    [Signal] public delegate void ScuffleRoundStartEventHandler(int roundNumber);
+    [Signal] public delegate void ScuffleRoundEndEventHandler(int roundNumber);
+    [Signal] public delegate void ScuffleEndEventHandler();
 
     // event handlers
-    private Scuffle.ScuffleStartEventHandler _scuffleStartHandler;
-    private Scuffle.ScuffleRoundStartEventHandler _scuffleRoundStartHandler;
-    private Scuffle.ScuffleRoundEndEventHandler _scuffleRoundEndHandler;
-    private Scuffle.ScuffleEndEventHandler _scuffleEndHandler;
     private readonly SubscriptionManager _subscriptionManager = new();
     
     // Export properties
@@ -100,42 +97,31 @@ public partial class BattleManager : Node
     private void _SetupSubscriptions()
     {
         // Scuffle events
-        _scuffleStartHandler = () => { EmitSignal(nameof(ScuffleStart)); };
-        Battle.Scuffle.ScuffleStart += _scuffleStartHandler;
-        _scuffleRoundStartHandler = (int roundNumber) => { EmitSignal(nameof(ScuffleRoundStart), roundNumber); };
-        Battle.Scuffle.ScuffleRoundStart += _scuffleRoundStartHandler;
-        _scuffleRoundEndHandler = (int roundNumber) => { EmitSignal(nameof(ScuffleRoundEnd), roundNumber); };
-        Battle.Scuffle.ScuffleRoundEnd += _scuffleRoundEndHandler;
-        _scuffleEndHandler = () => { EmitSignal(nameof(ScuffleEnd)); };
-        Battle.Scuffle.ScuffleEnd += _scuffleEndHandler;
+        Battle.Scuffle.ScuffleEnd += OnScuffleEnd;
+        Battle.Scuffle.ScuffleStart += OnScuffleStart;
+        Battle.Scuffle.ScuffleRoundEnd += OnScuffleRoundEnd;
+        Battle.Scuffle.ScuffleRoundStart += OnScuffleRoundStart;
         
         // Player events
-        _subscriptionManager.Subscribe(
-            h => Player.PlayerActionsRemainingChanged += h,
-            h => Player.PlayerActionsRemainingChanged -= h,
-            (int newVal, int oldVal) => { EmitSignal(nameof(PlayerActionsRemainingChanged), newVal, oldVal); }
-        );
-
-        _subscriptionManager.Subscribe(
-            h => Player.PlayerTurnStart += h,
-            h => Player.PlayerTurnStart -= h,
-            () => { EmitSignal(nameof(PlayerTurnStart)); }
-        );
-
-        _subscriptionManager.Subscribe(
-            h => Player.PlayerTurnEnd += h,
-            h => Player.PlayerTurnEnd -= h,
-            () => { EmitSignal(nameof(PlayerTurnEnd)); }
-        );
+        Player.IsPlayerTurnChanged += OnIsPlayerTurnChanged;
+        Player.PlayerActionsRemainingChanged += OnPlayerActionsRemainingChanged;
+        Player.PlayerTurnEnd += OnPlayerTurnEnd;
+        Player.PlayerTurnStart += OnPlayerTurnStart;
     }
 
     private void _RemoveSubscriptions()
     {
         // Scuffle Events
-        Battle.Scuffle.ScuffleStart -= _scuffleStartHandler;
-        Battle.Scuffle.ScuffleRoundStart -= _scuffleRoundStartHandler;
-        Battle.Scuffle.ScuffleRoundEnd -= _scuffleRoundEndHandler;
-        Battle.Scuffle.ScuffleEnd -= _scuffleEndHandler;
+        Battle.Scuffle.ScuffleEnd -= OnScuffleEnd;
+        Battle.Scuffle.ScuffleStart -= OnScuffleStart;
+        Battle.Scuffle.ScuffleRoundEnd -= OnScuffleRoundEnd;
+        Battle.Scuffle.ScuffleRoundStart -= OnScuffleRoundStart;
+        
+        // Player events
+        Player.IsPlayerTurnChanged -= OnIsPlayerTurnChanged;
+        Player.PlayerActionsRemainingChanged -= OnPlayerActionsRemainingChanged;
+        Player.PlayerTurnEnd -= OnPlayerTurnEnd;
+        Player.PlayerTurnStart -= OnPlayerTurnStart;
         
         _subscriptionManager.Clear();
     }
@@ -175,6 +161,9 @@ public partial class BattleManager : Node
 
     public async Task HandlePlayerPassTurn()
     {
+        if (!IsPlayerTurn)
+            throw new Exception("Cannot pass player turn, already not player turn");
+        
         // TODO - if actions remaining, do confirmation
         IsPlayerTurn = false;
         
@@ -192,9 +181,6 @@ public partial class BattleManager : Node
         // TODO - implement way for player to skip straight to combat resolution phase
     }
     
-    
-    
-
     public void DiscardCard(CardNode cardNode)
     {
         CardSlot cardSlot = cardNode.GetParent() as CardSlot;
@@ -343,5 +329,43 @@ public partial class BattleManager : Node
         {
             card.SubtractStat(StatName.Shield, 1);
         }
+    }
+    
+    /** Signal handlers */
+    private void OnIsPlayerTurnChanged(bool isPlayerTurn)
+    {
+        EmitSignal(nameof(IsPlayerTurnChanged), isPlayerTurn);
+    }
+    private void OnPlayerActionsRemainingChanged(int newValue, int oldValue)
+    {
+        EmitSignal(nameof(PlayerActionsRemainingChanged), newValue, oldValue);
+    }
+    private void OnPlayerTurnEnd()
+    {
+        EmitSignal(nameof(PlayerTurnEnd));
+    }
+    private void OnPlayerTurnStart()
+    {
+        EmitSignal(nameof(PlayerTurnStart));
+    }
+
+    private void OnScuffleEnd()
+    {
+        EmitSignal(nameof(ScuffleEnd));
+    }
+
+    private void OnScuffleRoundEnd(int roundNumber)
+    {
+        EmitSignal(nameof(ScuffleRoundEnd), roundNumber);
+    }
+
+    private void OnScuffleRoundStart(int roundNumber)
+    {
+        EmitSignal(nameof(ScuffleRoundStart), roundNumber);
+    }
+
+    private void OnScuffleStart()
+    {
+        EmitSignal(nameof(ScuffleStart));
     }
 }

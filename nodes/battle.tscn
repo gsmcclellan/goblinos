@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://bt58tyu2ek52v"]
+[gd_scene load_steps=8 format=3 uid="uid://bqrpew2p4rf7m"]
 
 [ext_resource type="Script" uid="uid://dw384y3qscd2i" path="res://Scripts/Battle/Battle.cs" id="1_gscff"]
 [ext_resource type="PackedScene" uid="uid://b2a35fcj8tkoe" path="res://Nodes/CardRow.tscn" id="2_gscff"]
@@ -85,12 +85,11 @@ offset_bottom = 678.0
 text = "0"
 
 [node name="Button" type="Button" parent="."]
-visible = false
 offset_left = 28.0
 offset_top = 974.0
 offset_right = 87.0
 offset_bottom = 1005.0
-text = "BREAK
+text = "TEST
 "
 
 [node name="Discard" parent="." instance=ExtResource("8_8avc7")]
