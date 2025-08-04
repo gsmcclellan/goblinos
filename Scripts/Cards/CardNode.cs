@@ -75,9 +75,9 @@ public partial class CardNode : Control
         }
     }
 
-    public int Health => (int)GetStat("Health");
-    public int Shield => (int)GetStat("Shield");
-    public int Power => (int)GetStat("Power");
+    public int Health => (int)GetStat(StatName.Health);
+    public int Shield => (int)GetStat(StatName.Shield);
+    public int Power => (int)GetStat(StatName.Power);
     
     public bool HasSummoningSickness
     {
@@ -115,7 +115,6 @@ public partial class CardNode : Control
     public override void _EnterTree()
     {
         _InitializeBattleManager();
-        _SetupSubscriptions();
         _SetupSubscriptions();
         GD.Print("Node added to scene tree");
         foreach (Node child in GetChildren())
@@ -161,13 +160,13 @@ public partial class CardNode : Control
         button.Connect("mouse_exited", new Callable(this, nameof(OnButtonMouseExited)));
     }
     
-    public object GetStat(string statName)
+    public int GetStat(StatName statName)
     {
-        var prop = _stats.GetType().GetProperty(statName);
+        var prop = _stats.GetType().GetProperty(statName.ToString());
         if (prop == null)
             throw new Exception($"Stat {statName} not found");
         
-        return prop.GetValue(_stats);
+        return (int)prop.GetValue(_stats);
     }
 
     public void SetStat(string statName, int value)
@@ -179,32 +178,16 @@ public partial class CardNode : Control
         
         UpdateStatLabels(); // TODO - normalize names so I can call UpdateStatLabel(statName)
     }
-    public void AddStat(StatName statName, object value)
+    public void AddStat(StatName statName, int value)
     {
         _stats.AddTempStat(statName, value);
         
         UpdateStatLabels(); // TODO - normalize names so I can call UpdateStatLabel(statName)
     }
 
-    public void SubtractStat(StatName statName, object value)
+    public void SubtractStat(StatName statName, int value)
     {
-        switch (value)
-        {
-            case int i:
-                AddStat(statName, -i);
-                break;
-            case float f:
-                AddStat(statName, -f);
-                break;
-            case double d:
-                AddStat(statName, -d);
-                break;
-            case long l:
-                AddStat(statName, -l);
-                break;
-            default:
-                throw new ArgumentException(@"Unsupported value type", nameof(value));
-        }
+        AddStat(statName, -value);
     }
 
     private void OnButtonMouseEntered()
@@ -227,12 +210,15 @@ public partial class CardNode : Control
         // Update UI when PlayerActionsRemainingChanged fires - if no more actions, cards become unplayable
         _battleManager.PlayerActionsRemainingChanged += OnPlayerActionsRemainingChanged;
         _battleManager.ScuffleEnd += OnScuffleEndEvent;
+        
+        _stats.StatChanged += OnStatChanged;
     }
 
     private void _RemoveSubscriptions()
     {
         _battleManager.PlayerActionsRemainingChanged -= OnPlayerActionsRemainingChanged;
         _battleManager.ScuffleEnd -= OnScuffleEndEvent;
+        _stats.StatChanged -= OnStatChanged;
     }
 
     private void OnPlayerActionsRemainingChanged(int newValue, int oldValue)
@@ -245,6 +231,17 @@ public partial class CardNode : Control
         GD.Print($"scuffle end - reset temp stats for {CardName}");
         _stats.ResetTempStats();
         _UpdateUI();
+    }
+
+    private void OnStatChanged(StatChangedEventDetails details)
+    {
+        // Update action amounts
+        var actions = Actions.Where(a => a.Stat == details.Stat);
+        foreach (var action in actions)
+        {
+            action.Amount = details.NewValue;
+        }
+        GD.Print($"Card {CardName} stat {details.Stat} changed from {details.OldValue} to {details.NewValue}");
     }
 
     public void InitializeFromCardData(CardData data)
@@ -261,9 +258,9 @@ public partial class CardNode : Control
 
         SpriteRegion = data.SpriteRegion;
 
-        // default actions - attack, shield (TODO - don't include if value 0)
         var attackAction = CardManager.GetCardAction(CardActionType.Attack);
         var shieldAction = CardManager.GetCardAction(CardActionType.Shield);
+        shieldAction.Amount = GetStat(shieldAction.Stat.Value);
         Actions.Add(attackAction);
         Actions.Add(shieldAction);
         if (data.Actions != null)
@@ -272,6 +269,9 @@ public partial class CardNode : Control
             foreach (var actionKey in data.Actions)
             {
                 var action = CardManager.GetCardAction(actionKey);
+                if (action.Stat != null)
+                    action.Amount = GetStat(action.Stat.Value);
+                GD.Print($"{action.Type} amount {action.Amount}");
                 Actions.Add(action);
             }
         }
@@ -334,7 +334,7 @@ public partial class CardNode : Control
     private void UpdateShieldLabel()
     {
         if (_shieldLabel != null)
-            _shieldLabel.Text = GetStat("Shield").ToString();
+            _shieldLabel.Text = Shield.ToString();
     }
 
     private void UpdateSummoningSicknessLabel()
@@ -346,13 +346,13 @@ public partial class CardNode : Control
     private void UpdateHealthLabel()
     {
         if (_healthLabel != null)
-            _healthLabel.Text = GetStat("Health").ToString();
+            _healthLabel.Text = Health.ToString();
     }
 
     private void UpdatePowerLabel()
     {
         if (_powerLabel != null)
-            _powerLabel.Text = GetStat("Power").ToString();
+            _powerLabel.Text = Power.ToString();
     }
 
     private void UpdateStatLabels()
@@ -482,7 +482,7 @@ public partial class CardNode : Control
     {
         await PlayAnimationAsync("Attacks");
         // Get damage
-        var damage = (int) GetStat("Power");
+        var damage = (int) GetStat(StatName.Power);
         // Assign damage to shield first then health
         // var remainingHealth = card.Health - damage;
         
@@ -490,7 +490,7 @@ public partial class CardNode : Control
         _hasActed = true;
         
         // TODO - battle logging
-        GD.Print($"{CardName} attacks {cardNode.CardName} for {damage} damage. {cardNode.GetStat("Health")} health remaining");
+        GD.Print($"{CardName} attacks {cardNode.CardName} for {damage} damage. {cardNode.GetStat(StatName.Health)} health remaining");
     }
 
     public async Task TakeDamage(int damage)

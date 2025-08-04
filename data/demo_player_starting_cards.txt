@@ -1,2 +1,4 @@
-3x goblin_stabber
-3x goblin_shielder
+1x goblin_stabber
+1x goblin_shielder
+0x goblin_sneak
+0x goblin_sniper

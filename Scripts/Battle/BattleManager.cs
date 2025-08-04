@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using GoblinCardGame.Scripts;
 using GoblinCardGame.Scripts.Actions;
 using GoblinCardGame.Scripts.Cards;
+using GoblinCardGame.Scripts.Cards.Classes;
 using GoblinCardGame.Scripts.Utilities.Actions;
 using Godot;
 
@@ -338,5 +339,9 @@ public partial class BattleManager : Node
     private void OnBreakButtonPressed()
     {
         GD.Print("Break here");
+        foreach (CardNode card in Battle.PlayerHand.Cards)
+        {
+            card.SubtractStat(StatName.Shield, 1);
+        }
     }
 }

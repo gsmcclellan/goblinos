@@ -32,7 +32,7 @@ public partial class ActionButton : Button
     public bool IsAttack => ActionType == CardActionType.Attack;
 
     public bool IsButtonVisible => _cardNode != null &&  _cardNode.IsInPlayerHand;
-    public bool IsEnabled => _cardNode != null && _cardNode.IsPlayable;
+    public bool IsEnabled => _cardNode != null && _cardNode.IsPlayable && (CardAction.Stat == null || CardAction.Amount > 0);
     public override void _Ready()
     {
         _label = GetNode<Label>("Label");
@@ -49,6 +49,8 @@ public partial class ActionButton : Button
     {
         _cardNode = cardNode;
         CardAction = action;
+
+        action.AmountChanged += OnAmountChanged;
 
         _UpdateUI();
         ActionButtonPressed += _cardNode.TriggerAction;
@@ -69,12 +71,18 @@ public partial class ActionButton : Button
     private void _UpdateLabel()
     {
         if (_label != null && CardAction != null)
-            _label.Text = CardAction.Text;
+            _label.Text = $"{CardAction.Text} {(CardAction.Amount != 0 ? CardAction.Amount.ToString(): "")}";
     }
 
     private void _UpdateIcon()
     {
         // TODO - set sprite path
+    }
+
+    public void OnAmountChanged(int newValue, int oldValue)
+    {
+        GD.Print($"Action amount changed from {oldValue} to {newValue}");
+        _UpdateUI();
     }
 
     public void OnPressed()

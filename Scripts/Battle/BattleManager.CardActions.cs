@@ -60,6 +60,8 @@ public partial class BattleManager
                     GD.Print("shielding");
                     // get target
                     var target = GetTargetForCardAction(details);
+                    if (target == null)
+                        throw new Exception($"No legal target for {details.ActionType} action");
                     // carry out action
                     target.AddStat(StatName.Shield, details.CardNode.Shield); // TODO - change to modifier
                     // discard card
@@ -95,8 +97,9 @@ public partial class BattleManager
     private CardNode GetScuffleTarget(CardActionEventDetails details)
     {
         // Get target TODO - bind target during mouseover, then include in details
-        return Battle.Scuffle.CardList.LastOrDefault(card =>
-            card.IsEnemy == (details.CardNode.IsEnemy == details.TargetsAlly));
+        var target = Battle.Scuffle.CardList.LastOrDefault(card =>
+                                 card.IsEnemy == (details.CardNode.IsEnemy == details.TargetsAlly));
+        return target;
     }
     
     private CardNode GetScuffleTarget(Func<CardNode, bool> compareFunction)
