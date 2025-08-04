@@ -173,8 +173,7 @@ public partial class Scuffle : CardContainers.CardContainer
             GD.Print("Attack discarded card: ", discardTarget.CardName);
             return discardTarget;
         }
-            
-
+        
         return null; // No targets found
     }
 

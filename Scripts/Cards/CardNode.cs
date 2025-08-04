@@ -125,6 +125,7 @@ public partial class CardNode : Control
 
     public override void _ExitTree()
     {
+        base._ExitTree();
         // Remove status effects tied to battle
 
         // Disconnect signals, stop timers, cleanup
@@ -495,6 +496,13 @@ public partial class CardNode : Control
 
     public async Task TakeDamage(int damage)
     {
+        if (GetParent() == null) // TODO - replace this when card is made visible, otherwise animation can't play so awaits forever
+        {
+            _stats.TakeDamage(damage);
+            UpdateHealthLabel();
+            UpdateShieldLabel();
+            return;
+        }
         // Play animation
         var animationTask = PlayAnimationAsync("IsAttacked");
         
