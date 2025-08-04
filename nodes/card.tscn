@@ -6,7 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://cvv7klacv22om" path="res://assets/demo-sprites4goblin4soldier.png" id="3_rgrtk"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_b2440"]
-bg_color = Color(0.705474, 0.566541, 0.49552, 1)
+bg_color = Color(0.501961, 0.65098, 0.4, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ya665"]
 bg_color = Color(0.22, 0.0242, 0.0242, 1)

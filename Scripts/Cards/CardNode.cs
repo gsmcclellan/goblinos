@@ -19,6 +19,7 @@ public partial class CardNode : Control
     [Export] public int BaseMaxHealth;
     [Export] public int BasePower;
 
+    [Export] private Panel _cardArea;
     [Export] private Label _cardNameLabel;
     [Export] private Label _healthLabel;
     [Export] private Label _shieldLabel;
@@ -121,6 +122,7 @@ public partial class CardNode : Control
             GD.Print(child.Name, " - ", child.GetType().Name);
         _UpdateUI();
         // Fire your event here
+        
     }
 
     public override void _ExitTree()
@@ -139,6 +141,7 @@ public partial class CardNode : Control
 
     private void _InitializeUI()
     {
+        _cardArea = GetNode<Panel>("CardArea");
         _healthLabel = GetNode<Label>("CardArea/Stats/Health/Label");
         _shieldLabel = GetNode<Label>("CardArea/Stats/Shield/Label");
         _powerLabel = GetNode<Label>("CardArea/Stats/Power/Label");
@@ -154,11 +157,13 @@ public partial class CardNode : Control
         UpdateStatLabels();
         UpdateStatusIcons();
         UpdateSpriteRegion();
+        UpdateCardArea();
         CreateAndRemoveActionButtons();
 
         var button = GetNode<Button>("CardArea/Stats/Shield");
         button.Connect("mouse_entered", new Callable(this, nameof(OnButtonMouseEntered)));
         button.Connect("mouse_exited", new Callable(this, nameof(OnButtonMouseExited)));
+
     }
     
     public int GetStat(StatName statName)
@@ -324,6 +329,20 @@ public partial class CardNode : Control
     private void AddActionButton(ActionButton actionButton)
     {
         _actionButtonContainer.AddChild(actionButton);
+    }
+
+    private void UpdateCardArea()
+    {
+        Color bgColor;
+        if (IsEnemy)
+            bgColor = new Color("#664D4D");
+        else
+            bgColor = new Color("#80A666");
+        var stylebox = new StyleBoxFlat();
+        stylebox.BgColor = bgColor; // Red color
+
+// Set it as the panel's style
+        _cardArea.AddThemeStyleboxOverride("panel", stylebox);
     }
     
     private void UpdateCardNameLabel()
