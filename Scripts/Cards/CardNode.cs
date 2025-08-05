@@ -430,9 +430,9 @@ public partial class CardNode : Control
          if (playButton != null) playButton.Visible = IsPlayable;
                 // TODO - update shield button too
         if (_attackButton != null)
-            _attackButton.Disabled = !IsPlayable;
+            _attackButton.Disabled = !IsPlayable || Power == 0;
         if (_shieldButton != null)
-            _shieldButton.Disabled = !IsPlayable;
+            _shieldButton.Disabled = !IsPlayable || Shield == 0;
         
         EmitSignal(nameof(TriggerUpdateCardActionButtons));
     }
@@ -453,26 +453,17 @@ public partial class CardNode : Control
 
     public void TriggerAddToScuffle()
     {
-        if (!IsPlayable) return;
-        GD.Print("Trigger add card to scuffle ", CardName);
-        // EmitSignal(SignalName.TriggerAddCardToScuffle, this);
+        TriggerAction(CardActionType.Attack);
     }
 
     public void TriggerShieldAction()
     {
-        if (!IsPlayable) return;
-        // TODO - make general card action function instead of hardcoding each one.
-        GD.Print("Trigger shield action"); 
-        _battleManager.PlayCardAction(new CardActionEventDetails
-        {
-            CardNode = this,
-            ActionType = CardActionType.Shield,
-            TargetsAlly = true
-        });
+        TriggerAction(CardActionType.Shield);
     }
 
     public void TriggerAction(CardActionType actionType)
     {
+        if (!IsPlayable) return;
         // Get action
         CardAction action = Actions.FirstOrDefault(cardAction => cardAction.Type == actionType);
         if (action == null)

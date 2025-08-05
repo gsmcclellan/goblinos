@@ -14,9 +14,9 @@ public partial class GlobalSettings : Node
     public const int ActionButtonHeight = 24;
     public const int ActionButtonWidth = 190;
 
-    public const string BattlePath = "/root/Main/Battle";
-    public const string BattleManagerPath = "/root/Main/Battle/BattleManager";
-    public const string BattleUserInterfacePath = "/root/Main/Battle/BattleUI";
+    public const string BattlePath = "/root/Battle";
+    public const string BattleManagerPath = "/root/Battle/BattleManager";
+    public const string BattleUserInterfacePath = "/root/Battle/BattleUI";
 
     public static readonly Random Random = new Random();
 

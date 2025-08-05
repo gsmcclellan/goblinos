@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using GoblinCardGame.Scripts.CardContainers;
 using Godot;
@@ -58,13 +59,21 @@ public partial class Battle : Node2D
         // Optional: connect signal manually to verify
         // button.Connect("pressed", new Callable(this, nameof(OnPlayerDrawButtonPressed)));
         
-        BattleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
-        UserInterface = GetNode<BattleUserInterface>(GlobalSettings.BattleUserInterfacePath);
+        BattleManager = GetNode<BattleManager>("BattleManager");
+        UserInterface = GetNode<BattleUserInterface>("BattleUI");
+        if (BattleManager == null)
+            throw new Exception("Battle Manager not loaded");
+        if (UserInterface == null)
+            throw new Exception("Battle User Interface not loaded");
+        
         PlayerHand = GetNode<CardRow>(_playerHandPath);
         EnemyHand = GetNode<CardRow>(_enemyHandPath);
         PlayerDeck = GetNode<Deck>(_playerDeckPath);
         Scuffle = GetNode<Scuffle>(_scufflePath);
         Discard = GetNode<Discard>(_discardPath);
+
+        if (PlayerHand == null || EnemyHand == null || PlayerDeck == null || Scuffle == null || Discard == null)
+            throw new Exception("Battle components not loaded");
         
         Player = new BattlePlayer();
 
