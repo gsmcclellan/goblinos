@@ -29,9 +29,10 @@ public partial class BattleManager : Node
     // Export properties
     [Export] public Battle Battle;
     [Export] private string _cardDataJsonPath = "res://data/test_cards.json";
-    
     public BattlePlayer Player;
-    private PackedScene _cardScene = GD.Load<PackedScene>("res://Nodes/Card.tscn");
+    
+    private PackedScene _cardScene = GD.Load<PackedScene>(GlobalSettings.CardNodeScenePath);
+    private PackedScene _battleResultsScene = GD.Load<PackedScene>(GlobalSettings.BattleResultsScreenScenePath);
 
     private int _cardsPlayedThisTurn = 0;
     private int _cardsAddedToScuffleThisTurn;
@@ -207,7 +208,7 @@ public partial class BattleManager : Node
         await Battle.Scuffle.DoBattle();
         
         // Check if battle over, out of all cards, if one side has none battle is over
-        HandleResetBattle();
+        HandleResetBattleAfterScuffle();
     }
 
     public void DrawCard()
@@ -242,13 +243,35 @@ public partial class BattleManager : Node
         HandleStartOfPlayerTurn(playerGoesFirst);
     }
 
-    public void HandleEndOfBattle()
+    public void HandleEndOfBattle(bool isVictory)
     {
-        // TODO - end of battle
         GD.Print("Game Over!");
+
+        // instantiate
+        var resultsScreen = _battleResultsScene.Instantiate<BattleResultsScreen>();
+        resultsScreen.IsVictory = isVictory;
+
+        var root = GetTree().Root;
+
+        // capture current scene BEFORE adding the new one
+        var oldScene = GetTree().CurrentScene;
+
+        // add new scene and set it current immediately
+        root.AddChild(resultsScreen);
+        GetTree().CurrentScene = resultsScreen;
+        GD.Print("After set: CurrentScene=", GetTree().CurrentScene, " path=", GetTree().CurrentScene?.GetPath());
+
+        // now remove & free the old scene (if it exists and isn't the same node)
+        if (oldScene != null && oldScene != resultsScreen)
+        {
+            // disconnect any signals on oldScene from elsewhere before freeing it
+            root.RemoveChild(oldScene);
+            oldScene.Free(); // immediate
+            GD.Print("Freed old scene: ", oldScene);
+        }
     }
 
-    public void HandleResetBattle()
+    public void HandleResetBattleAfterScuffle()
     {
         // Get cards from discard - put them back in player deck or enemy hand
         var allCards = Battle.Scuffle.RemoveAllCards().Concat(Battle.Discard.RemoveAllCards()).ToList();
@@ -257,7 +280,8 @@ public partial class BattleManager : Node
 
         if (enemyCards.Count == 0 || playerCards.Count == 0)
         {
-            HandleEndOfBattle();
+            var isVictory = playerCards.Count != 0;
+            HandleEndOfBattle(isVictory);
             return;
         }
         

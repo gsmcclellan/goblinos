@@ -16,6 +16,7 @@ offset_left = 322.0
 offset_top = 784.0
 offset_right = 1437.0
 offset_bottom = 1064.0
+metadata/_edit_use_anchors_ = true
 
 [node name="EnemyCards" parent="." instance=ExtResource("2_gscff")]
 offset_top = 30.0
