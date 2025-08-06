@@ -1,4 +1,4 @@
 0x soldier_captain
-3x soldier_guard
-0x soldier_spearman
+0x soldier_guard
+4x soldier_spearman
 0x soldier_crossbowman

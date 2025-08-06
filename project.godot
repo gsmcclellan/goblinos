@@ -11,9 +11,13 @@ config_version=5
 [application]
 
 config/name="GoblinCardGame"
-run/main_scene="uid://bspb7egv67fku"
+run/main_scene="uid://ctbtijb7xaa7i"
 config/features=PackedStringArray("4.4", "C#", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GlobalSettings="*res://Scripts/GlobalSettings.cs"
 
 [display]
 
