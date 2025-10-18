@@ -524,7 +524,7 @@ public partial class CardNode : Control
         var damageResults = await cardNode.TakeDamage(damage);
         cardAttackDetails.HealthDamage = damageResults.HealthDamage;
         cardAttackDetails.ShieldDamage = damageResults.ShieldDamage;
-        cardAttackDetails.OverkillDamage = damageResults.RemainingDamage;
+        cardAttackDetails.OverkillDamage = damageResults.OverkillDamage;
         
         _hasActed = true;
         
@@ -533,7 +533,7 @@ public partial class CardNode : Control
         return cardAttackDetails;
     }
 
-    public async Task<(int HealthDamage, int ShieldDamage, int RemainingDamage)> TakeDamage(int damage)
+    public async Task<(int HealthDamage, int ShieldDamage, int OverkillDamage)> TakeDamage(int damage)
     {
         var resultsTuple = _stats.TakeDamage(damage);
         UpdateHealthLabel();

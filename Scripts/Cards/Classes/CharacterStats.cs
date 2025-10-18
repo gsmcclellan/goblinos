@@ -1,126 +1,112 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using Godot;
 
 namespace GoblinCardGame.Scripts.Cards.Classes;
 
 public class CharacterStats
 {
     /** Actions */
-    public event Action<StatChangedEventDetails> StatChanged;
+    public event Action<StatChangedEventDetails>? StatChanged;
 
-    private ModifiableStat MaxHealth { get; }
+    private ModifiablePoolStat Health { get; }
+    private ModifiablePoolStat Shield { get; }
     private ModifiableStat Power { get;  }
-    private ModifiableStat ShieldCapacity { get; }
-    
-    private int _health;
-    
-    
-    
-    private int _baseMaxHealth;
-    private int _basePower;
-    private int _baseShield;
-    private int _tempHealth;
-    private int _tempShield;
-    private int _tempPower;
-    
-    public int Health
-    {
-        get => _health;
-        set
-        {
-            var oldAmount = _health;
-            if (BaseMaxHealth == 0)
-                BaseMaxHealth = value;
-            Math.Clamp(value, 0, MaxHealth);
-            if (oldAmount != _health)
-                StatChanged?.Invoke(new StatChangedEventDetails(StatName.Health, oldAmount, _health));
-        }
-    }
-    
-    // Base properties - define permanent base stats, can have modifiers & ablities add to increase total, plus temp values
-    public int BaseMaxHealth
-    {
-        get => _baseMaxHealth;
-        set
-        {
-            var oldAmount = _baseMaxHealth;
-            _baseMaxHealth = Math.Max(value, 1);
-            if (oldAmount != _baseMaxHealth)
-                StatChanged?.Invoke(new StatChangedEventDetails(StatName.BaseMaxHealth, oldAmount, _baseMaxHealth));
-        }
-    }
 
-    public int BasePower
-    {
-        get => _basePower;
-        set
-        {
-            var oldAmount = _basePower;
-            _basePower = Math.Max(value, 0);
-            if (oldAmount != _basePower)
-                StatChanged?.Invoke(new StatChangedEventDetails(StatName.BasePower, oldAmount, _basePower));
-        }
-    }
-    public int BaseShield { get; init; }
-    
-    // Temp stats - reset on battle reset (replace with list of modifiers that can have different resets)
-    public int TempMaxHealth { get; set; }
-    public int TempPower { get; set; }
-    public int TempShield { get; set; }
-    
-    
+    private readonly Dictionary<StatName, ModifiableStat> _statByName;
 
-    public int MaxHealth => BaseMaxHealth + TempMaxHealth; // modifiers
-    public int Shield => BaseShield + TempShield; // modifiers
-    public int Power => BasePower + TempPower;
-
-    public void ResetTempStats()
+    public CharacterStats()
     {
-        TempMaxHealth = 0;
-        TempShield = 0;
-        TempPower = 0;
-    }
-
-    public (int HealthDamage, int ShieldDamage, int RemainingDamage) TakeDamage(int damage)
-    {
-        var startingHealth = Health;
-        var startingShield = Shield;
+        Health = new ModifiablePoolStat(StatName.Health, 0);
+        Shield = new ModifiablePoolStat(StatName.Shield, 0);
+        Power = new ModifiableStat(StatName.Power, 0);
         
-        List<StatName> damageTargets = [StatName.TempShield, StatName.BaseShield, StatName.Health];
-        var i = 0;
-        var remainingDamage = damage;
-        while (i < damageTargets.Count && remainingDamage > 0)
+        _statByName = new Dictionary<StatName, ModifiableStat>
         {
-            var statName = damageTargets[i];
-            // Get current value of damage target
-            var statProp = GetType().GetProperty(statName.ToString());
-            if (statProp == null)
-                throw new Exception($"Stat {statName} not found");
-            var existingStatValue = (int)(statProp.GetValue(this) ?? 0);
-            
-            // calculate damage & remove from damage target, sub from remaining value
-            var damageToApply = Math.Min(damage, existingStatValue);
-            
-            var newStatValue = existingStatValue - damageToApply;
-            remainingDamage -= damageToApply;
-            
-            // Set resulting value, increment i to go to next damage target
-            statProp.SetValue(this, newStatValue);
+            [StatName.Health] = Health,
+            [StatName.Shield] = Shield,
+            [StatName.Power]  = Power
+        };
+    }
 
-            // if (newStatValue != existingStatValue)
-            // {
-            //     StatChanged?.Invoke(new StatChangedEventDetails
-            //     {
-            //         Stat = statName,
-            //         OldValue = existingStatValue,
-            //         NewValue = newStatValue
-            //     });
-            // }
-            i++;
+    public CharacterStats(int startingHealth, int startingShield, int startingPower)
+    {
+        Health = new ModifiablePoolStat(StatName.Health, startingHealth);
+        Shield = new ModifiablePoolStat(StatName.Shield, startingShield);
+        Power = new ModifiableStat(StatName.Power, startingPower);
+        
+        _statByName = new Dictionary<StatName, ModifiableStat>
+        {
+            [StatName.Health] = Health,
+            [StatName.Shield] = Shield,
+            [StatName.Power]  = Power
+        };
+        
+    }
+    
+    public CharacterStats(int startingHealth, int startingShield, int startingPower, List<StatModifier> statModifiers)
+    {
+        Health = new ModifiablePoolStat(StatName.Health, startingHealth);
+        Shield = new ModifiablePoolStat(StatName.Shield, startingShield);
+        Power = new ModifiableStat(StatName.Power, startingPower);
+        
+        _statByName = new Dictionary<StatName, ModifiableStat>
+        {
+            [StatName.Health] = Health,
+            [StatName.Shield] = Shield,
+            [StatName.Power]  = Power
+        };
+
+        if (statModifiers.Count == 0)
+            return;
+        
+        foreach (var mod in statModifiers)
+        {
+            if (_statByName.TryGetValue(mod.StatName, out var stat))
+            {
+                stat.AddModifier(mod);
+            }
+            else
+            {
+                // Unknown stat target; log or ignore safely
+                // e.g., Console.WriteLine($"No stat found for {mod.StatName}");
+                GD.PrintErr($"Unable to apply stat modifier, unknown target {mod.StatName}");
+            }
         }
+    }
+    
+    public void ExpireStatModifiers(StatModifierExpiration expiresAt = StatModifierExpiration.EndOfBattle)
+    {
+        // Remove expiring mods; PoolStats auto-clamp Current via OnTotalChanged.
+        Health.RemoveWhere(mod => mod.ExpiresAt == expiresAt);
+        Power.RemoveWhere(mod => mod.ExpiresAt == expiresAt);
+        Shield.RemoveWhere(mod => mod.ExpiresAt == expiresAt);
+        
+        // Optional: if you ever add temp shield via Gain(...) without a modifier,
+        // and you want it to vanish at EndOfRound, you could do:
+        // if (phase == StatModifierExpiration.EndOfRound)
+        //     Shield.SetCurrent(Math.Min(Shield.Current, Shield.Total));
+        // (OnTotalChanged already enforces this when Total drops; this line is only
+        // for temp shield NOT tied to a modifier.)
+    }
 
-        return (startingHealth - Health, startingShield - Shield, remainingDamage);
+    public DamageReport TakeDamage(int damage)
+    {
+        if (damage == 0)
+            return new DamageReport(0, 0, 0);
+        // Shield Damage
+        if (Shield.TrySpend(damage, out var shieldDamage))
+            return new DamageReport(0, shieldDamage, 0);
+        var remainingDamage = damage - shieldDamage;
+        
+        // Health Damage
+        if (Health.TrySpend(remainingDamage, out var healthDamage))
+            return new DamageReport(healthDamage, shieldDamage, 0);
+
+        // Remainder
+        var overkillDamage = remainingDamage - healthDamage;
+        return new DamageReport(healthDamage, shieldDamage, overkillDamage);
     }
 
     public void AddTempStat(StatName statName, int value)
@@ -141,25 +127,6 @@ public class CharacterStats
 
         // StatChanged?.Invoke(new StatChangedEventDetails(statName, currentStatValue, newFullValue)); // TODO - remove, redundant if setters invoke action
     }
-}
-
-public enum StatName
-{
-    Health,
-    Shield,
-    Power
-}
-
-public enum StatModifierExpiration
-{
-    EndOfScuffle,
-    EndOfBattle
-}
-
-public enum StatModifierOperation
-{
-    Add,
-    Multiply
 }
 
 
@@ -440,4 +407,30 @@ public readonly struct StatChangedEventDetails(StatName stat, int oldValue, int 
     public int OldValue { get; init; } = oldValue;
     /// <summary>The new computed value.</summary>
     public int NewValue { get; init; } = newValue;
+}
+
+public enum StatName
+{
+    Health,
+    Shield,
+    Power
+}
+
+public enum StatModifierExpiration
+{
+    EndOfScuffle,
+    EndOfBattle
+}
+
+public enum StatModifierOperation
+{
+    Add,
+    Multiply
+}
+
+public readonly struct DamageReport(int h, int s, int ok)
+{
+    public int Health { get; } = h;
+    public int Shield { get; } = s;
+    public int Overkill { get; } = ok;
 }
