@@ -31,6 +31,11 @@ public partial class CardContainer : Control, ICardContainer
     {
         return CardList[GD.RandRange(0, CardCount)];
     }
+    
+    public CardNode SelectRandomCard(int number = 1)
+    {
+        return CardList[GD.RandRange(0, CardCount)];
+    }
 
     public override void _Ready()
     {

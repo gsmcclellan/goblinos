@@ -76,9 +76,9 @@ public partial class CardNode : Control
         }
     }
 
-    public int Health => (int)GetStat(StatName.Health);
-    public int Shield => (int)GetStat(StatName.Shield);
-    public int Power => (int)GetStat(StatName.Power);
+    public int Health => GetStat(StatName.Health);
+    public int Shield => GetStat(StatName.Shield);
+    public int Power => GetStat(StatName.Power);
     
     public bool HasSummoningSickness
     {
@@ -104,7 +104,18 @@ public partial class CardNode : Control
     /** Determines if card can do action in scuffle */
     public bool CanDoScuffleAction => !_hasActed && !_hasSummoningSickness;
     public bool IsInPlayerHand => _battleManager != null && _battleManager.Battle.PlayerHand.HasCard(this);
-    public bool IsPlayable => _battleManager != null && IsInPlayerHand && _battleManager.CanPlayCard;
+    public bool IsInEnemyHand => _battleManager != null && _battleManager.Battle.EnemyHand.HasCard(this);
+    public bool IsPlayable
+    {
+        get
+        {
+            if (_battleManager == null)
+                return false;
+            if (_battleManager.IsPlayerTurn)
+                return IsInPlayerHand && _battleManager.CanPlayCard;
+            return !_battleManager.IsPlayerTurn && IsEnemy && IsInEnemyHand;
+        }
+    }
 
     /* Lifecycle methods */
     public override void _Ready()
@@ -117,7 +128,6 @@ public partial class CardNode : Control
     {
         _InitializeBattleManager();
         _SetupSubscriptions();
-        GD.Print("Node added to scene tree");
         foreach (Node child in GetChildren())
             GD.Print(child.Name, " - ", child.GetType().Name);
         _UpdateUI();
@@ -198,17 +208,18 @@ public partial class CardNode : Control
 
     private void OnButtonMouseEntered()
     {
-        GD.Print("Mouse entered button");
+        // GD.Print("Mouse entered button"); TODO
     }
 
     private void OnButtonMouseExited()
     {
-        GD.Print("Mouse exited button");
+        // GD.Print("Mouse exited button"); TODO
     }
 
     private void _UpdateUI()
     {
         _UpdateActionButtonsUI();
+        UpdateStatLabels();
     }
     /** Sets up listeners for signals coming from BattleManager to update UI / status */
     private void _SetupSubscriptions()
@@ -425,6 +436,7 @@ public partial class CardNode : Control
 
     private void _UpdateActionButtonsUI()
     {
+        // GD.Print($"Update action buttons UI - {CardName}");
         // Check if playable
         Button playButton = GetNode<Button>("PlayButton");
          if (playButton != null) playButton.Visible = IsPlayable;
@@ -433,6 +445,12 @@ public partial class CardNode : Control
             _attackButton.Disabled = !IsPlayable || Power == 0;
         if (_shieldButton != null)
             _shieldButton.Disabled = !IsPlayable || Shield == 0;
+        
+        // Action buttons
+        foreach (var actionButton in ActionButtons)
+        {
+            actionButton.UpdateUI();
+        }
         
         EmitSignal(nameof(TriggerUpdateCardActionButtons));
     }
@@ -489,38 +507,47 @@ public partial class CardNode : Control
                                   }
                               """;
 
-    public async Task Attack(CardNode cardNode)
+    public async Task<CardAttackDetails> Attack(CardNode cardNode)
     {
+        var cardAttackDetails = new CardAttackDetails
+        {
+            Subject = this,
+            Target = cardNode
+        };
+        
         await PlayAnimationAsync("Attacks");
         // Get damage
-        var damage = (int) GetStat(StatName.Power);
+        var damage = GetStat(StatName.Power);
         // Assign damage to shield first then health
         // var remainingHealth = card.Health - damage;
         
-        await cardNode.TakeDamage(damage);
+        var damageResults = await cardNode.TakeDamage(damage);
+        cardAttackDetails.HealthDamage = damageResults.HealthDamage;
+        cardAttackDetails.ShieldDamage = damageResults.ShieldDamage;
+        cardAttackDetails.OverkillDamage = damageResults.RemainingDamage;
+        
         _hasActed = true;
         
         // TODO - battle logging
         GD.Print($"{CardName} attacks {cardNode.CardName} for {damage} damage. {cardNode.GetStat(StatName.Health)} health remaining");
+        return cardAttackDetails;
     }
 
-    public async Task TakeDamage(int damage)
+    public async Task<(int HealthDamage, int ShieldDamage, int RemainingDamage)> TakeDamage(int damage)
     {
-        if (GetParent() == null) // TODO - replace this when card is made visible, otherwise animation can't play so awaits forever
-        {
-            _stats.TakeDamage(damage);
-            UpdateHealthLabel();
-            UpdateShieldLabel();
-            return;
-        }
-        // Play animation
-        var animationTask = PlayAnimationAsync("IsAttacked");
-        
-        _stats.TakeDamage(damage);
+        var resultsTuple = _stats.TakeDamage(damage);
         UpdateHealthLabel();
         UpdateShieldLabel();
         
+        if (GetParent() == null) // TODO - replace this when card is made visible, otherwise animation can't play so awaits forever
+        {
+            return resultsTuple;
+        }
+        
+        // Play animation
+        var animationTask = PlayAnimationAsync("IsAttacked");
         await animationTask;
+        return resultsTuple;
     }
 }
 
@@ -551,3 +578,14 @@ public class CardEnterScuffleDetails
     public int PreviousCardsAddedToScuffle;
 }
 
+public class CardAttackDetails
+{
+    public CardNode Subject { get; init; }
+    public CardNode Target { get; init; }
+    public int HealthDamage { get; set; }
+    public int ShieldDamage { get; set; }
+    
+    public int OverkillDamage { get; set; }
+    public int Damage => HealthDamage + ShieldDamage;
+    // Damage type
+}

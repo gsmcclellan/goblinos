@@ -48,7 +48,6 @@ public partial class CardRow : HBoxContainer, ICardContainer
     
     public override void _Ready()
     {
-        GD.Print("CardRow Ready");
         _initializeCardSlots();
     }
 
@@ -63,8 +62,6 @@ public partial class CardRow : HBoxContainer, ICardContainer
     
     public bool AddCard(CardNode cardNode)
     {
-        GD.Print("AddCard: ", cardNode);
-        
         foreach (var cardSlot in _cardSlots.Where(cardSlot => !cardSlot.HasCard))
         {
             cardSlot.AttachCard(cardNode);

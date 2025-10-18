@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://ctbtijb7xaa7i"]
+[gd_scene load_steps=9 format=3 uid="uid://ctbtijb7xaa7i"]
 
 [ext_resource type="Script" uid="uid://dw384y3qscd2i" path="res://Scripts/Battle/Battle.cs" id="1_gscff"]
 [ext_resource type="PackedScene" uid="uid://b2a35fcj8tkoe" path="res://Nodes/CardRow.tscn" id="2_gscff"]
@@ -7,15 +7,16 @@
 [ext_resource type="PackedScene" uid="uid://5yraic4bidl0" path="res://Nodes/Scuffle.tscn" id="5_4p6dk"]
 [ext_resource type="Script" uid="uid://dbonjpux7hvd3" path="res://Scripts/Battle/BattleUserInterface.cs" id="6_gscff"]
 [ext_resource type="PackedScene" uid="uid://bch8wkccadm1a" path="res://Nodes/Discard.tscn" id="8_8avc7"]
+[ext_resource type="PackedScene" uid="uid://cex1mor2dw6r4" path="res://Nodes/BattleLogger.tscn" id="8_nw3qo"]
 
 [node name="Battle" type="Node2D"]
 script = ExtResource("1_gscff")
 
 [node name="PlayerCards" parent="." instance=ExtResource("2_gscff")]
-offset_left = 322.0
-offset_top = 784.0
-offset_right = 1437.0
-offset_bottom = 1064.0
+offset_left = 27.0
+offset_top = 778.0
+offset_right = 1142.0
+offset_bottom = 1058.0
 metadata/_edit_use_anchors_ = true
 
 [node name="EnemyCards" parent="." instance=ExtResource("2_gscff")]
@@ -27,7 +28,7 @@ RowSize = 9
 script = ExtResource("3_gscff")
 
 [node name="PlayerDeck" parent="." instance=ExtResource("4_ssy3x")]
-position = Vector2(1605, 766)
+position = Vector2(1235, 772)
 
 [node name="PlayerDrawButton" type="Button" parent="PlayerDeck"]
 visible = false
@@ -86,15 +87,18 @@ offset_bottom = 678.0
 text = "0"
 
 [node name="Button" type="Button" parent="."]
-offset_left = 28.0
-offset_top = 974.0
-offset_right = 87.0
-offset_bottom = 1005.0
+offset_left = 1775.0
+offset_top = 14.0
+offset_right = 1834.0
+offset_bottom = 45.0
 text = "TEST
 "
 
 [node name="Discard" parent="." instance=ExtResource("8_8avc7")]
 position = Vector2(1634, 368)
+
+[node name="BattleLogger" parent="." instance=ExtResource("8_nw3qo")]
+position = Vector2(1463, 778)
 
 [connection signal="pressed" from="PlayerDeck/PlayerDrawButton" to="." method="OnPlayerDrawButtonPressed"]
 [connection signal="pressed" from="BattleUI/AddPlayerCard" to="." method="OnAddGoblinButtonPressed"]

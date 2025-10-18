@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://cex1mor2dw6r4"]
+
+[ext_resource type="Script" uid="uid://daoflyrhhftpa" path="res://Scripts/Battle/Logging/BattleLogger.cs" id="1_45wnp"]
+[ext_resource type="PackedScene" uid="uid://kps8gjlmg74a" path="res://Nodes/BattleLog.tscn" id="2_45wnp"]
+
+[node name="Logger" type="Node2D"]
+position = Vector2(1, 0)
+script = ExtResource("1_45wnp")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+offset_right = 500.0
+offset_bottom = 250.0
+
+[node name="LogContainer" type="VBoxContainer" parent="ScrollContainer"]
+layout_mode = 2
+
+[node name="Label" parent="ScrollContainer/LogContainer" instance=ExtResource("2_45wnp")]
+layout_mode = 2
+text = "This is a battle log. Something happened."

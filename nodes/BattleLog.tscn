@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://kps8gjlmg74a"]
+
+[node name="Label" type="Label"]
+text = "Goblin 1 Attacked Soldier for 4 damage."

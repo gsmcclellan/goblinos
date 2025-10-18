@@ -42,7 +42,7 @@ public partial class ActionButton : Button
         
         Connect("pressed", new Callable(this, nameof(OnPressed)));
 
-        _UpdateUI();
+        UpdateUI();
     }
 
     public void Initialize(CardNode cardNode, CardAction action)
@@ -52,20 +52,20 @@ public partial class ActionButton : Button
 
         action.AmountChanged += OnAmountChanged;
 
-        _UpdateUI();
+        UpdateUI();
         ActionButtonPressed += _cardNode.TriggerAction;
-        _cardNode.TriggerUpdateCardActionButtons += _UpdateUI;
+        _cardNode.TriggerUpdateCardActionButtons += UpdateUI;
     }
 
-    public void _UpdateUI()
+    public void UpdateUI()
     {
         if (_cardNode == null)
             return;
-        GD.Print($"Action button {ActionType} update UI - CardNode = {_cardNode.CardName}");
+        // GD.Print($"Action button {ActionType} update UI - CardNode = {_cardNode.CardName}");
         _UpdateLabel();
         Visible = IsButtonVisible;
         Disabled = !IsEnabled;
-        GD.Print($"Visible: {Visible} Enabled: ${IsEnabled} Disabled: {Disabled}");
+        // GD.Print($"Visible: {Visible} Enabled: ${IsEnabled} Disabled: {Disabled}");
     }
 
     private void _UpdateLabel()
@@ -82,7 +82,7 @@ public partial class ActionButton : Button
     public void OnAmountChanged(int newValue, int oldValue)
     {
         GD.Print($"Action amount changed from {oldValue} to {newValue}");
-        _UpdateUI();
+        UpdateUI();
     }
 
     public void OnPressed()
@@ -96,7 +96,7 @@ public partial class ActionButton : Button
     {
         if (_cardNode != null)
         {
-            _cardNode.TriggerUpdateCardActionButtons -= _UpdateUI;
+            _cardNode.TriggerUpdateCardActionButtons -= UpdateUI;
             ActionButtonPressed -= _cardNode.TriggerAction;
         }
             

@@ -13,10 +13,13 @@ namespace GoblinCardGame.Scripts.Battle;
 public partial class Scuffle : CardContainers.CardContainer
 {
     /** Signals */
-    [Signal] public delegate void ScuffleStartEventHandler(); // TODO - hook this event up 
-    [Signal] public delegate void ScuffleRoundStartEventHandler(int roundNumber); // TODO - hook this event up 
-    [Signal] public delegate void ScuffleRoundEndEventHandler(int roundNumber); // TODO - hook this event up 
-    [Signal] public delegate void ScuffleEndEventHandler(); // TODO - hook this event up 
+    [Signal] public delegate void ScuffleStartEventHandler();
+    [Signal] public delegate void ScuffleRoundStartEventHandler(int roundNumber);
+    [Signal] public delegate void ScuffleRoundEndEventHandler(int roundNumber);
+    [Signal] public delegate void ScuffleEndEventHandler();
+    
+    public event Action<CardAttackDetails> CardAttackOccurred;
+    public event Action<CardNode> CardDeathOccurred;
     
     private BattleManager _battleManager;
     
@@ -87,14 +90,17 @@ public partial class Scuffle : CardContainers.CardContainer
         await OnScuffleRoundEnd(scuffleEventDetails);
     }
 
-    public async Task CardAttack(CardNode attacker, CardNode target)
+    public async Task<CardAttackDetails> CardAttack(CardNode attacker, CardNode target)
     {
-        await attacker.Attack(target);
-        // TODO - attack animation
-                    
+        var cardAttackDetails = await attacker.Attack(target);
+        
+        CardAttackOccurred?.Invoke(cardAttackDetails);
+        
         // If killed, remove card
         if (target.Health <= 0)
             KillCard(target);
+
+        return cardAttackDetails;
     }
 
     /** Do things that happen on scuffle round start. Including callback for each card*/
@@ -196,6 +202,9 @@ public partial class Scuffle : CardContainers.CardContainer
             // Must be attacking discarded card
             _battleManager.Battle.Discard.RemoveCard(cardNode);
         cardNode.QueueFree();
+        // TODO - graveyard
+        
+        CardDeathOccurred?.Invoke(cardNode);
     }
     public new void AddCard(CardNode cardNode)
     {
@@ -214,3 +223,5 @@ public class ScuffleRoundEventDetails
     public int NumberOfRounds; // total rounds to be done in scuffle
     public bool IsLastRound => RoundNumber + 1 == NumberOfRounds;
 }
+
+

@@ -45,11 +45,16 @@ public partial class BattleManager
     
     public async Task PlayCardAction(CardActionEventDetails details)
     {
-        if (PlayerActionsRemaining < 1) return;
+        if (ActionsRemaining < 1) 
+            throw new Exception("Cannot play card, no actions remaining");
 
+        if (details.CardNode.IsEnemy == IsPlayerTurn)
+            throw new Exception(
+                $"Cannot play card CardNode.IsEnemy={details.CardNode.IsEnemy} IsPlayerTurn={IsPlayerTurn}");
         try
         {
-            GD.Print("Resolve card action: ", details);
+            CardActionOccurred?.Invoke(details);
+            
             switch (details.ActionType)
             {
                 case CardActionType.Attack:
@@ -64,6 +69,7 @@ public partial class BattleManager
                         throw new Exception($"No legal target for {details.ActionType} action");
                     // carry out action
                     target.AddStat(StatName.Shield, details.CardNode.Shield); // TODO - change to modifier
+                    details.Target = target;
                     // discard card
                     break;
                 case CardActionType.Sneak:
@@ -116,12 +122,13 @@ public partial class BattleManager
             throw new Exception("Missing target for action");
         // Take target, move to front of scuffle
         Battle.Scuffle.MoveCardToIndex(target, 0);
+        details.Target = target;
     }
 
     public async Task SnipeAction(CardActionEventDetails details)
     {
         var target = GetScuffleTarget(details);
-
+        details.Target = target;
         await Battle.Scuffle.CardAttack(details.CardNode, target);
     }
 
@@ -133,12 +140,13 @@ public partial class BattleManager
                    card.HasSummoningSickness == false;
         });
         target.HasSummoningSickness = true;
+        details.Target = target;
     }
 
     public async Task AssistAction(CardActionEventDetails details)
     {
         var target = GetScuffleTarget(details);
-
         target.AddStat(StatName.Power, details.CardNode.Power); // TODO - change to modifier
+        details.Target = target;
     }
 }

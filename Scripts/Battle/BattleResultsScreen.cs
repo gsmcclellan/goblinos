@@ -80,7 +80,7 @@ public partial class BattleResultsScreen : Node2D
         if (currentScene != null && currentScene != newBattle)
         {
             root.RemoveChild(currentScene);
-            currentScene.Free(); // immediate free (not deferred)
+            currentScene.Free();
         }
     }
 }

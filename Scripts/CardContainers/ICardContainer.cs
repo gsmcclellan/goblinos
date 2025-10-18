@@ -42,4 +42,11 @@ public interface ICardContainer
             return card;
         }
     public void RemoveCard(CardNode cardNode);
+    
+    public CardNode SelectRandomCard(int number = 1)
+    {
+        var i = GD.RandRange(0, CardCount - 1);
+        var card = Cards.ElementAt(i);
+        return card;
+    }
 }
