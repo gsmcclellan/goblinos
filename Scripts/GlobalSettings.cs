@@ -18,6 +18,7 @@ public partial class GlobalSettings : Node
     public const string BattleManagerPath = "/root/Battle/BattleManager";
     public const string BattleUserInterfacePath = "/root/Battle/BattleUI";
 
+    public const string BattleLogScenePath = "res://Nodes/BattleLog.tscn";
     public const string BattleScenePath = "res://Nodes/Battle.tscn";
     public const string BattleResultsScreenScenePath = "res://Nodes/BattleResultsScreen.tscn";
     public const string CardNodeScenePath = "res://Nodes/Card.tscn";

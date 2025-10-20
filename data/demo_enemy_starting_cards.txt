@@ -1,4 +1,5 @@
-0x soldier_captain
-0x soldier_guard
-4x soldier_spearman
-0x soldier_crossbowman
+1x soldier_captain
+4x soldier_guard
+3x soldier_spearman
+2x soldier_crossbowman
+0x test_dummy

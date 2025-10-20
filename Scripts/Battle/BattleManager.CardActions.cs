@@ -45,15 +45,20 @@ public partial class BattleManager
     
     public async Task PlayCardAction(CardActionEventDetails details)
     {
-        if (PlayerActionsRemaining < 1) return;
+        if (ActionsRemaining < 1) 
+            throw new Exception("Cannot play card, no actions remaining");
 
+        if (details.CardNode.IsEnemy == IsPlayerTurn)
+            throw new Exception(
+                $"Cannot play card CardNode.IsEnemy={details.CardNode.IsEnemy} IsPlayerTurn={IsPlayerTurn}");
         try
         {
-            GD.Print("Resolve card action: ", details);
+            CardActionOccurred?.Invoke(details);
+            Task task;
             switch (details.ActionType)
             {
                 case CardActionType.Attack:
-                    await AddCardToScuffle(details.CardNode);
+                    task = AddCardToScuffle(details.CardNode);
                     break;
                 case CardActionType.Shield:
                     // TODO - make own function
@@ -63,24 +68,27 @@ public partial class BattleManager
                     if (target == null)
                         throw new Exception($"No legal target for {details.ActionType} action");
                     // carry out action
-                    target.AddStat(StatName.Shield, details.CardNode.Shield); // TODO - change to modifier
+                    details.Target = target;
+                    task = ModifyStatAction(target, details.CardNode.CardName, StatName.Shield, details.CardNode.Shield, StatModifierOperation.Add);
                     // discard card
                     break;
                 case CardActionType.Sneak:
-                    await SneakAction(details);
+                    task = SneakAction(details);
                     break;
                 case CardActionType.Snipe:
-                    await SnipeAction(details);
+                    task = SnipeAction(details);
                     break;
                 case CardActionType.Confuse:
-                    await ConfuseAction(details);
+                    task = ConfuseAction(details);
                     break;
                 case CardActionType.Assist:
-                    await AssistAction(details);
+                    task = AssistAction(details);
                     break;
                 default:
                     throw new NotImplementedException($"Card action type {details.ActionType} not implemented");
             }
+
+            await task;
 
             if (details.DiscardAfterAction)
                 DiscardCard(details.CardNode);
@@ -91,6 +99,7 @@ public partial class BattleManager
         catch (Exception ex)
         {
             GD.PrintErr("Error playing card action: ", ex);
+            throw;
         }
     }
 
@@ -108,7 +117,7 @@ public partial class BattleManager
         return Battle.Scuffle.CardList.LastOrDefault(compareFunction);
     }
 
-    public async Task SneakAction(CardActionEventDetails details)
+    public Task SneakAction(CardActionEventDetails details)
     {
         var target = GetScuffleTarget(details);
 
@@ -116,16 +125,18 @@ public partial class BattleManager
             throw new Exception("Missing target for action");
         // Take target, move to front of scuffle
         Battle.Scuffle.MoveCardToIndex(target, 0);
+        details.Target = target;
+        return Task.CompletedTask;
     }
 
     public async Task SnipeAction(CardActionEventDetails details)
     {
         var target = GetScuffleTarget(details);
-
+        details.Target = target;
         await Battle.Scuffle.CardAttack(details.CardNode, target);
     }
 
-    public async Task ConfuseAction(CardActionEventDetails details)
+    public Task ConfuseAction(CardActionEventDetails details)
     {
         var target = GetScuffleTarget((CardNode card) =>
         {
@@ -133,12 +144,21 @@ public partial class BattleManager
                    card.HasSummoningSickness == false;
         });
         target.HasSummoningSickness = true;
+        details.Target = target;
+        return Task.CompletedTask;
     }
 
-    public async Task AssistAction(CardActionEventDetails details)
+    public Task AssistAction(CardActionEventDetails details)
     {
         var target = GetScuffleTarget(details);
+        details.Target = target;
+        return ModifyStatAction(details.Target, details.CardNode.CardName, StatName.Power, details.CardNode.Power,  StatModifierOperation.Add);
+    }
 
-        target.AddStat(StatName.Power, details.CardNode.Power); // TODO - change to modifier
+    public Task ModifyStatAction(CardNode target, String source, StatName statName, int value, StatModifierOperation op)
+    {
+        var mod = new StatModifier(source, statName, value, StatModifierExpiration.EndOfScuffle, op, 1); // TODO - change to card id
+        target.AddStatModifier(mod);
+        return Task.CompletedTask;
     }
 }

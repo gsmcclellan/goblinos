@@ -116,5 +116,17 @@
       "X": 5,
       "Y": 0
     }
+  },
+  "test_dummy": {
+    "CardName": "Test Dummy",
+    "MaxHealth": 999,
+    "Shield": 999,
+    "Power": 0,
+    "IsEnemy": true,
+    "Actions": [],
+    "SpriteRegion": {
+      "X": 6,
+      "Y": 0
+    }
   }
 }

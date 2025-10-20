@@ -9,8 +9,6 @@ namespace GoblinCardGame.Scripts.Battle;
 public partial class Battle : Node2D
 {
     // Signals
-    [Signal] public delegate void PlayerActionsRemainingChangedEventHandler(int newValue, int oldValue);
-    [Signal] public delegate void IsPlayerTurnChangedEventHandler(int isPlayerTurn);
     
     // Properties
     [Export] private NodePath _battleManagerPath = "BattleManager";
@@ -28,33 +26,11 @@ public partial class Battle : Node2D
     public Deck PlayerDeck;
     public Scuffle Scuffle;
     public CardPile Discard;
-    public BattlePlayer Player;
-
-    public bool IsPlayerTurn
-    {
-        get => Player.IsTurn;
-        set
-        {
-            Player.IsTurn = value;
-        }
-    }
-    public int PlayerActionsRemaining
-    {
-        get => Player.ActionsRemaining;
-        set
-        {
-            int oldValue = Player.ActionsRemaining;
-            Player.ActionsRemaining = value;
-            if (value != oldValue)
-                EmitSignal(nameof(PlayerActionsRemainingChanged), value, oldValue);
-        }
-    }
+    // public BattlePlayer Player;
     
     public override void _Ready()
     {
-        GD.Print("Battle _Ready called");
         var button = GetNode<Button>(_playerDeckPath + "/PlayerDrawButton");
-        GD.Print("PlayerDrawButton found: ", button != null);
 
         // Optional: connect signal manually to verify
         // button.Connect("pressed", new Callable(this, nameof(OnPlayerDrawButtonPressed)));
@@ -75,8 +51,6 @@ public partial class Battle : Node2D
         if (PlayerHand == null || EnemyHand == null || PlayerDeck == null || Scuffle == null || Discard == null)
             throw new Exception("Battle components not loaded");
         
-        Player = new BattlePlayer();
-
         _SetupSubscriptions();
     }
 

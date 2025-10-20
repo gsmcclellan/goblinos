@@ -1,4 +1,4 @@
-1x goblin_stabber
-0x goblin_shielder
-1x goblin_sneak
-1x goblin_sniper
+3x goblin_stabber
+3x goblin_shielder
+2x goblin_sneak
+2x goblin_sniper
