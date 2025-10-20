@@ -259,6 +259,7 @@ public partial class BattleManager : Node
         await Battle.Scuffle.DoBattle();
         
         // Check if battle over, out of all cards, if one side has none battle is over
+        GD.Print("End of battle phase");
         HandleResetBattleAfterScuffle();
     }
 
@@ -326,6 +327,7 @@ public partial class BattleManager : Node
 
     public void HandleResetBattleAfterScuffle()
     {
+        GD.Print("Handle reset battle.");
         // Get cards from discard - put them back in player deck or enemy hand
         var allCards = Battle.Scuffle.RemoveAllCards().Concat(Battle.Discard.RemoveAllCards()).ToList();
         var enemyCards = allCards.Where(card => card.IsEnemy).ToList();

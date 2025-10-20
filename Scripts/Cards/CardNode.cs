@@ -76,9 +76,9 @@ public partial class CardNode : Control
         }
     }
 
-    public int Health => GetStat(StatName.Health);
-    public int Shield => GetStat(StatName.Shield);
-    public int Power => GetStat(StatName.Power);
+    public int Health => GetStatValue(StatName.Health);
+    public int Shield => GetStatValue(StatName.Shield);
+    public int Power => GetStatValue(StatName.Power);
     
     public bool HasSummoningSickness
     {
@@ -176,13 +176,27 @@ public partial class CardNode : Control
 
     }
     
-    public int GetStat(StatName statName)
+    public void AddStatModifier(StatModifier mod)
     {
-        var prop = _stats.GetType().GetProperty(statName.ToString());
-        if (prop == null)
-            throw new Exception($"Stat {statName} not found");
-        
-        return (int)prop.GetValue(_stats);
+        _stats.AddModifier(mod);
+    }
+    
+    public IReadOnlyStat GetStat(StatName statName)
+    {
+        return _stats.Get(statName);
+    }
+
+    public IReadOnlyPoolStat GetPoolStat(StatName statName)
+    {
+        return _stats.GetPoolStat(statName);
+    }
+
+    public int GetStatValue(StatName statName)
+    {
+        var stat = _stats.Get(statName);
+        if (stat is IReadOnlyPoolStat poolStat)
+            return poolStat.Current;
+        return stat.Total;
     }
 
     public void SetStat(string statName, int value)
@@ -193,17 +207,6 @@ public partial class CardNode : Control
         prop.SetValue(_stats, value);
         
         UpdateStatLabels(); // TODO - normalize names so I can call UpdateStatLabel(statName)
-    }
-    public void AddStat(StatName statName, int value)
-    {
-        _stats.AddTempStat(statName, value);
-        
-        UpdateStatLabels(); // TODO - normalize names so I can call UpdateStatLabel(statName)
-    }
-
-    public void SubtractStat(StatName statName, int value)
-    {
-        AddStat(statName, -value);
     }
 
     private void OnButtonMouseEntered()
@@ -246,7 +249,7 @@ public partial class CardNode : Control
     private void OnScuffleEndEvent()
     {
         GD.Print($"scuffle end - reset temp stats for {CardName}");
-        _stats.ResetTempStats();
+        _stats.ExpireStatModifiers(StatModifierExpiration.EndOfScuffle);
         _UpdateUI();
     }
 
@@ -264,20 +267,14 @@ public partial class CardNode : Control
     public void InitializeFromCardData(CardData data)
     {
         CardName = data.CardName;
-        _stats = new CharacterStats
-        {
-            BaseMaxHealth = data.MaxHealth,
-            Health = data.MaxHealth,
-            BaseShield = data.Shield,
-            BasePower = data.Power
-        };
+        _stats = new CharacterStats(data.MaxHealth, data.Shield, data.Power);
         IsEnemy = data.IsEnemy;
 
         SpriteRegion = data.SpriteRegion;
 
         var attackAction = CardManager.GetCardAction(CardActionType.Attack);
         var shieldAction = CardManager.GetCardAction(CardActionType.Shield);
-        shieldAction.Amount = GetStat(shieldAction.Stat.Value);
+        shieldAction.Amount = GetStatValue(shieldAction.Stat.Value);
         Actions.Add(attackAction);
         Actions.Add(shieldAction);
         if (data.Actions != null)
@@ -287,7 +284,7 @@ public partial class CardNode : Control
             {
                 var action = CardManager.GetCardAction(actionKey);
                 if (action.Stat != null)
-                    action.Amount = GetStat(action.Stat.Value);
+                    action.Amount = GetStatValue(action.Stat.Value);
                 GD.Print($"{action.Type} amount {action.Amount}");
                 Actions.Add(action);
             }
@@ -517,37 +514,42 @@ public partial class CardNode : Control
         
         await PlayAnimationAsync("Attacks");
         // Get damage
-        var damage = GetStat(StatName.Power);
+        var powerValue = GetStatValue(StatName.Power);
         // Assign damage to shield first then health
         // var remainingHealth = card.Health - damage;
         
-        var damageResults = await cardNode.TakeDamage(damage);
-        cardAttackDetails.HealthDamage = damageResults.HealthDamage;
-        cardAttackDetails.ShieldDamage = damageResults.ShieldDamage;
-        cardAttackDetails.OverkillDamage = damageResults.OverkillDamage;
+        var damageResults = await cardNode.TakeDamage(powerValue);
+        cardAttackDetails.HealthDamage = damageResults.Health;
+        cardAttackDetails.ShieldDamage = damageResults.Shield;
+        cardAttackDetails.OverkillDamage = damageResults.Overkill;
         
         _hasActed = true;
         
-        // TODO - battle logging
-        GD.Print($"{CardName} attacks {cardNode.CardName} for {damage} damage. {cardNode.GetStat(StatName.Health)} health remaining");
+        GD.Print($"{CardName} attacks {cardNode.CardName} for {powerValue} damage. {cardNode.GetStat(StatName.Health)} health remaining");
         return cardAttackDetails;
     }
 
-    public async Task<(int HealthDamage, int ShieldDamage, int OverkillDamage)> TakeDamage(int damage)
+    public Task PlayDeathAnimation()
     {
-        var resultsTuple = _stats.TakeDamage(damage);
+        var animationTask = PlayAnimationAsync("Death");
+        return animationTask;
+    }
+
+    public async Task<DamageReport> TakeDamage(int damage)
+    {
+        var damageReport = _stats.TakeDamage(damage);
         UpdateHealthLabel();
         UpdateShieldLabel();
         
         if (GetParent() == null) // TODO - replace this when card is made visible, otherwise animation can't play so awaits forever
         {
-            return resultsTuple;
+            return damageReport;
         }
         
         // Play animation
         var animationTask = PlayAnimationAsync("IsAttacked");
         await animationTask;
-        return resultsTuple;
+        return damageReport;
     }
 }
 

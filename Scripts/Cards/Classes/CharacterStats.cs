@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 namespace GoblinCardGame.Scripts.Cards.Classes;
@@ -75,6 +76,16 @@ public class CharacterStats
             }
         }
     }
+
+    public void AddModifier(StatModifier mod)
+    {
+        var stat = _statByName[mod.StatName];
+
+        if (stat == null)
+            throw new Exception($"{mod.StatName} stat not found.");
+
+        stat.AddModifier(mod);
+    }
     
     public void ExpireStatModifiers(StatModifierExpiration expiresAt = StatModifierExpiration.EndOfBattle)
     {
@@ -89,6 +100,25 @@ public class CharacterStats
         //     Shield.SetCurrent(Math.Min(Shield.Current, Shield.Total));
         // (OnTotalChanged already enforces this when Total drops; this line is only
         // for temp shield NOT tied to a modifier.)
+    }
+
+    public IReadOnlyStat Get(StatName name)
+    {
+        return _statByName[name];
+    }
+
+    public IReadOnlyPoolStat GetPoolStat(StatName name)
+    {
+        var stat = _statByName[name];
+        if (stat is ModifiablePoolStat poolStat)
+            return poolStat;
+
+        throw new Exception($"Unable to find pooled stat {name}");
+    }
+
+    public List<IReadOnlyStat> List()
+    {
+        return _statByName.Values.Select(stat => (IReadOnlyStat)stat).ToList();
     }
 
     public DamageReport TakeDamage(int damage)
@@ -107,25 +137,6 @@ public class CharacterStats
         // Remainder
         var overkillDamage = remainingDamage - healthDamage;
         return new DamageReport(healthDamage, shieldDamage, overkillDamage);
-    }
-
-    public void AddTempStat(StatName statName, int value)
-    {
-        var statProperty = GetType().GetProperty(statName.ToString());
-        var tempStatProperty = GetType().GetProperty("Temp" + statName);
-        
-        if (tempStatProperty == null || statProperty == null)
-            throw new Exception($"Stat {statName} not found");
-        
-        
-        var currentStatValue = (int)(statProperty.GetValue(this) ?? 0);
-        var currentTempStatValue = (int)(tempStatProperty.GetValue(this) ?? 0);
-
-        int newValue = currentTempStatValue + value;
-        tempStatProperty.SetValue(this, newValue);
-        var newFullValue = (int)(statProperty.GetValue(this) ?? 0);
-
-        // StatChanged?.Invoke(new StatChangedEventDetails(statName, currentStatValue, newFullValue)); // TODO - remove, redundant if setters invoke action
     }
 }
 
@@ -178,7 +189,7 @@ public class StatModifier
 /// and the pool auto-adjusts (gains when max rises; clamps when max falls).
 /// </remarks>
 /// <seealso cref="ModifiableStat"/>
-public sealed class ModifiablePoolStat: ModifiableStat
+public sealed class ModifiablePoolStat: ModifiableStat, IReadOnlyPoolStat
 {
     /// <summary>The current (consumable) amount in the pool. Always clamped to the range [0, <see cref="Total"/>].</summary>
     public int Current { get; private set; }
@@ -237,7 +248,7 @@ public sealed class ModifiablePoolStat: ModifiableStat
     /// Spends up to <paramref name="amount"/> from the pool.
     /// </summary>
     /// <param name="amount">Requested spend amount.</param>
-    /// <returns>The amount actually spent (0..amount), never negative.</returns>
+    /// <returns>The amount actually spent (0 | amount), never negative.</returns>
     public int Spend(int amount)
     {
         if (amount <= 0) return 0;
@@ -291,7 +302,7 @@ public sealed class ModifiablePoolStat: ModifiableStat
 /// The computed <see cref="Total"/> is emitted via <see cref="StatChanged"/> when it changes
 /// through <see cref="SetBase"/> or modifier list updates (<see cref="AddModifier"/> / <see cref="RemoveWhere"/>).
 /// </remarks>
-public class ModifiableStat
+public class ModifiableStat: IReadOnlyStat
 {
     /// <summary>Logical identifier for the stat (e.g., Health, Power, Shield).</summary>
     public StatName Name { get; }
@@ -330,7 +341,7 @@ public class ModifiableStat
         {
             var amountToAdd = 0f;
             
-            // TODO - Decide order for when multiply becomes relevent
+            // TODO - Decide order for when multiply becomes relevant
             foreach (var m in _mods)
             {
                 var stacks = Math.Max(1, m.Stacks);
@@ -339,7 +350,7 @@ public class ModifiableStat
                     case StatModifierOperation.Add: 
                         amountToAdd += m.Value * stacks; 
                         break;
-                    case StatModifierOperation.Multiply: // TODO implement mult
+                    case StatModifierOperation.Multiply: // TODO implement multiply
                     default:
                         throw new NotImplementedException($"Modifier operation {m.Operation} not implemented.");
                 }
@@ -433,4 +444,17 @@ public readonly struct DamageReport(int h, int s, int ok)
     public int Health { get; } = h;
     public int Shield { get; } = s;
     public int Overkill { get; } = ok;
+}
+
+public interface IReadOnlyStat
+{
+    public StatName Name { get; }
+    public int Base { get; }
+    public int Total { get; }
+    public IReadOnlyList<StatModifier> Mods { get; }
+}
+
+public interface IReadOnlyPoolStat: IReadOnlyStat
+{
+    public int Current { get; }
 }

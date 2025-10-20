@@ -5,12 +5,11 @@ using System.Threading.Tasks;
 using GoblinCardGame.Scripts.Actions;
 using GoblinCardGame.Scripts.CardContainers;
 using GoblinCardGame.Scripts.Cards;
-using GoblinCardGame.Scripts.Utilities.Actions;
 using Godot;
 
 namespace GoblinCardGame.Scripts.Battle;
 
-public partial class Scuffle : CardContainers.CardContainer
+public partial class Scuffle : CardContainer
 {
     /** Signals */
     [Signal] public delegate void ScuffleStartEventHandler();
@@ -36,11 +35,14 @@ public partial class Scuffle : CardContainers.CardContainer
             GD.Print($"Round {i + 1} of {GlobalSettings.NumberOfCombatRounds}");
             await DoBattleRoundAsync(i, numCombatRounds);
         }
+
+        GD.Print("End of scuffle.");
         EmitSignal(nameof(ScuffleEnd));
     }
     
     private async Task DoBattleRoundAsync (int roundNumber, int numberOfRounds, float delaySeconds = 0.5f)
     {
+        GD.Print($"Scuffle round {roundNumber} of {numberOfRounds} start.");
         var scuffleEventDetails = new ScuffleRoundEventDetails
         {
             RoundNumber = roundNumber,
@@ -48,11 +50,12 @@ public partial class Scuffle : CardContainers.CardContainer
         };
         await OnScuffleRoundStart(scuffleEventDetails);
         var actedCards = new HashSet<CardNode>(); // if current card dies, get next card by iterating list until you find one that hasn't acted
+        var numActions = 0;
         CardNode currentCardNode = null;
         do
         {
             currentCardNode = GetNext(currentCardNode);
-            
+            GD.Print($"Resolve action for current card {currentCardNode.CardName}, ${numActions} previous actions.");
             if (currentCardNode == null)
                 throw new Exception("No current card - something went wrong");
 
@@ -85,6 +88,9 @@ public partial class Scuffle : CardContainers.CardContainer
                 currentCardNode = CardList.FirstOrDefault(c => !actedCards.Contains(c));
             else 
                 actedCards.Add(currentCardNode);
+
+            GetTree().CreateTimer(delaySeconds);
+            numActions++;
         } while (HasNext(currentCardNode));
 
         await OnScuffleRoundEnd(scuffleEventDetails);
@@ -98,7 +104,7 @@ public partial class Scuffle : CardContainers.CardContainer
         
         // If killed, remove card
         if (target.Health <= 0)
-            KillCard(target);
+            await KillCard(target);
 
         return cardAttackDetails;
     }
@@ -116,9 +122,10 @@ public partial class Scuffle : CardContainers.CardContainer
     }
 
     /** Do things that happen on scuffle round end. Including callback for each card*/
-    public async Task OnScuffleRoundEnd(ScuffleRoundEventDetails details)
+    public Task OnScuffleRoundEnd(ScuffleRoundEventDetails details)
     {
         EmitSignal(nameof(ScuffleRoundEnd), details.RoundNumber);
+        return Task.CompletedTask;
     }
 
     private bool HasNext(CardNode cardNode)
@@ -193,9 +200,12 @@ public partial class Scuffle : CardContainers.CardContainer
 
         // factor in level
     }
-    private void KillCard(CardNode cardNode)
+    private async Task KillCard(CardNode cardNode)
     {
         // TODO - Do animations
+        GD.Print($"Kill card {cardNode.CardName}");
+        await cardNode.PlayDeathAnimation();
+        GD.Print("animation complete");
         if (IsAncestorOf(cardNode))
             cardNode.GetParent<ICardContainer>().RemoveCard(cardNode);
         else
