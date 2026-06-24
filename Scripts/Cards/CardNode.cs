@@ -7,6 +7,7 @@ using GoblinCardGame.Scripts.Actions;
 using Godot;
 
 using GoblinCardGame.Scripts.Battle;
+using GoblinCardGame.Scripts.Cards.Classes;
 using BattleManager = GoblinCardGame.Scripts.Battle.BattleManager;
 
 namespace GoblinCardGame.Scripts.Cards;
@@ -18,6 +19,7 @@ public partial class CardNode : Control
     [Export] public int BaseMaxHealth;
     [Export] public int BasePower;
 
+    [Export] private Panel _cardArea;
     [Export] private Label _cardNameLabel;
     [Export] private Label _healthLabel;
     [Export] private Label _shieldLabel;
@@ -46,12 +48,7 @@ public partial class CardNode : Control
 
     /* Private properties */
     private string _cardName = "Card Name";
-    private int _shield;
-    private int _health;
-    private int _maxArmor;
-    private int _maxHealth;
-    private int _power;
-
+    private CharacterStats _stats;
     private Vector2 _spriteRegion;
 
     /* Battle properties */
@@ -79,48 +76,10 @@ public partial class CardNode : Control
         }
     }
 
-    public int Shield
-    {
-        get => _shield;
-        set
-        {
-            _shield = value;
-            UpdateShieldLabel();
-        }
-    }
-
-    public int Health
-    {
-        get => _health;
-        set
-        {
-            _health = value;
-            UpdateHealthLabel();
-        }
-    }
-
-    public int MaxArmor
-    {
-        get { return _maxArmor; }
-        set { _maxArmor = value; }
-    }
-
-    public int MaxHealth
-    {
-        get => _maxHealth;
-        set => _maxHealth = value;
-    }
-
-    public int Power
-    {
-        get { return _power; }
-        set
-        {
-            _power = value;
-            UpdatePowerLabel();
-        }
-    }
-
+    public int Health => GetStatValue(StatName.Health);
+    public int Shield => GetStatValue(StatName.Shield);
+    public int Power => GetStatValue(StatName.Power);
+    
     public bool HasSummoningSickness
     {
         get => _hasSummoningSickness;
@@ -145,44 +104,54 @@ public partial class CardNode : Control
     /** Determines if card can do action in scuffle */
     public bool CanDoScuffleAction => !_hasActed && !_hasSummoningSickness;
     public bool IsInPlayerHand => _battleManager != null && _battleManager.Battle.PlayerHand.HasCard(this);
-    public bool IsPlayable => _battleManager != null && IsInPlayerHand && _battleManager.CanPlayCard;
+    public bool IsInEnemyHand => _battleManager != null && _battleManager.Battle.EnemyHand.HasCard(this);
+    public bool IsPlayable
+    {
+        get
+        {
+            if (_battleManager == null)
+                return false;
+            if (_battleManager.IsPlayerTurn)
+                return IsInPlayerHand && _battleManager.CanPlayCard;
+            return !_battleManager.IsPlayerTurn && IsEnemy && IsInEnemyHand;
+        }
+    }
 
     /* Lifecycle methods */
     public override void _Ready()
     {
-        _InitializeBattleManager();
-        _SetupSubscriptions();
         _InitializeUI();
         _UpdateUI();
     }
 
     public override void _EnterTree()
     {
-        GD.Print("Node added to scene tree");
+        _InitializeBattleManager();
+        _SetupSubscriptions();
         foreach (Node child in GetChildren())
             GD.Print(child.Name, " - ", child.GetType().Name);
         _UpdateUI();
         // Fire your event here
+        
     }
 
     public override void _ExitTree()
     {
+        base._ExitTree();
         // Remove status effects tied to battle
 
         // Disconnect signals, stop timers, cleanup
-        // _RemoveSubscriptions();
+        _RemoveSubscriptions();
     }
 
     public void _InitializeBattleManager()
     {
         _battleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
-
-        // Add listener for Battle Manager to listen to this card.
-        // Connect(SignalName.TriggerAddCardToScuffle, new Callable(_battleManager, "PlayCard"));
     }
 
     private void _InitializeUI()
     {
+        _cardArea = GetNode<Panel>("CardArea");
         _healthLabel = GetNode<Label>("CardArea/Stats/Health/Label");
         _shieldLabel = GetNode<Label>("CardArea/Stats/Shield/Label");
         _powerLabel = GetNode<Label>("CardArea/Stats/Power/Label");
@@ -198,61 +167,114 @@ public partial class CardNode : Control
         UpdateStatLabels();
         UpdateStatusIcons();
         UpdateSpriteRegion();
+        UpdateCardArea();
         CreateAndRemoveActionButtons();
 
         var button = GetNode<Button>("CardArea/Stats/Shield");
         button.Connect("mouse_entered", new Callable(this, nameof(OnButtonMouseEntered)));
         button.Connect("mouse_exited", new Callable(this, nameof(OnButtonMouseExited)));
+
+    }
+    
+    public void AddStatModifier(StatModifier mod)
+    {
+        _stats.AddModifier(mod);
+    }
+    
+    public IReadOnlyStat GetStat(StatName statName)
+    {
+        return _stats.Get(statName);
+    }
+
+    public IReadOnlyPoolStat GetPoolStat(StatName statName)
+    {
+        return _stats.GetPoolStat(statName);
+    }
+
+    public int GetStatValue(StatName statName)
+    {
+        var stat = _stats.Get(statName);
+        if (stat is IReadOnlyPoolStat poolStat)
+            return poolStat.Current;
+        return stat.Total;
+    }
+
+    public void SetStat(string statName, int value)
+    {
+        var prop = _stats.GetType().GetProperty(statName);
+        if (prop == null)
+            throw new Exception($"Stat {statName} not found");
+        prop.SetValue(_stats, value);
+        
+        UpdateStatLabels(); // TODO - normalize names so I can call UpdateStatLabel(statName)
     }
 
     private void OnButtonMouseEntered()
     {
-        GD.Print("Mouse entered button");
+        // GD.Print("Mouse entered button"); TODO
     }
 
     private void OnButtonMouseExited()
     {
-        GD.Print("Mouse exited button");
+        // GD.Print("Mouse exited button"); TODO
     }
 
     private void _UpdateUI()
     {
-        GD.Print($"{CardName} update UI");
-        
         _UpdateActionButtonsUI();
+        UpdateStatLabels();
     }
     /** Sets up listeners for signals coming from BattleManager to update UI / status */
     private void _SetupSubscriptions()
     {
         // Update UI when PlayerActionsRemainingChanged fires - if no more actions, cards become unplayable
-        _playerActionsChangedSubscription = Callable.From((int _, int _) => _UpdateUI());
-        _battleManager.Connect("PlayerActionsRemainingChanged", _playerActionsChangedSubscription);
+        _battleManager.PlayerActionsRemainingChanged += OnPlayerActionsRemainingChanged;
+        _battleManager.ScuffleEnd += OnScuffleEndEvent;
         
+        _stats.StatChanged += OnStatChanged;
     }
 
     private void _RemoveSubscriptions()
     {
-        if (_battleManager?.IsConnected("PlayerActionsRemainingChanged", _playerActionsChangedSubscription) == true)
-        {
-            _battleManager.Disconnect("PlayerActionsRemainingChanged", _playerActionsChangedSubscription);
-        }
-            
+        _battleManager.PlayerActionsRemainingChanged -= OnPlayerActionsRemainingChanged;
+        _battleManager.ScuffleEnd -= OnScuffleEndEvent;
+        _stats.StatChanged -= OnStatChanged;
     }
-    
+
+    private void OnPlayerActionsRemainingChanged(int newValue, int oldValue)
+    {
+        _UpdateUI();
+    }
+
+    private void OnScuffleEndEvent()
+    {
+        GD.Print($"scuffle end - reset temp stats for {CardName}");
+        _stats.ExpireStatModifiers(StatModifierExpiration.EndOfScuffle);
+        _UpdateUI();
+    }
+
+    private void OnStatChanged(StatChangedEventDetails details)
+    {
+        // Update action amounts
+        var actions = Actions.Where(a => a.Stat == details.Stat);
+        foreach (var action in actions)
+        {
+            action.Amount = details.NewValue;
+        }
+        GD.Print($"Card {CardName} stat {details.Stat} changed from {details.OldValue} to {details.NewValue}");
+    }
 
     public void InitializeFromCardData(CardData data)
     {
         CardName = data.CardName;
-        Health = MaxHealth = data.MaxHealth;
-        Shield = Shield = data.Shield;
-        Power = data.Power;
+        _stats = new CharacterStats(data.MaxHealth, data.Shield, data.Power);
         IsEnemy = data.IsEnemy;
 
         SpriteRegion = data.SpriteRegion;
 
-        // default actions - attack, shield (TODO - don't include if value 0)
         var attackAction = CardManager.GetCardAction(CardActionType.Attack);
         var shieldAction = CardManager.GetCardAction(CardActionType.Shield);
+        shieldAction.Amount = GetStatValue(shieldAction.Stat.Value);
         Actions.Add(attackAction);
         Actions.Add(shieldAction);
         if (data.Actions != null)
@@ -261,6 +283,9 @@ public partial class CardNode : Control
             foreach (var actionKey in data.Actions)
             {
                 var action = CardManager.GetCardAction(actionKey);
+                if (action.Stat != null)
+                    action.Amount = GetStatValue(action.Stat.Value);
+                GD.Print($"{action.Type} amount {action.Amount}");
                 Actions.Add(action);
             }
         }
@@ -289,7 +314,7 @@ public partial class CardNode : Control
         throw new NotImplementedException("Card entered function not implemented");
     }
 
-    public async Task OnScuffleRoundStart(ScuffleRoundStartDetails details)
+    public async Task OnScuffleRoundStart(ScuffleRoundEventDetails details)
     {
         _hasActed = false;
         if (details.RoundNumber + 1 > GlobalSettings.NumberOfSummoningSicknessRounds)
@@ -306,12 +331,26 @@ public partial class CardNode : Control
         if (_animationPlayer == null)
             throw new Exception("Unable to access animation player");
         _animationPlayer.Play(animationName);
-        await ToSignal(_animationPlayer, AnimationPlayer.SignalName.AnimationFinished);
+        await ToSignal(_animationPlayer, AnimationMixer.SignalName.AnimationFinished);
     }
 
     private void AddActionButton(ActionButton actionButton)
     {
         _actionButtonContainer.AddChild(actionButton);
+    }
+
+    private void UpdateCardArea()
+    {
+        Color bgColor;
+        if (IsEnemy)
+            bgColor = new Color("#664D4D");
+        else
+            bgColor = new Color("#80A666");
+        var stylebox = new StyleBoxFlat();
+        stylebox.BgColor = bgColor; // Red color
+
+// Set it as the panel's style
+        _cardArea.AddThemeStyleboxOverride("panel", stylebox);
     }
     
     private void UpdateCardNameLabel()
@@ -323,7 +362,7 @@ public partial class CardNode : Control
     private void UpdateShieldLabel()
     {
         if (_shieldLabel != null)
-            _shieldLabel.Text = _shield.ToString();
+            _shieldLabel.Text = Shield.ToString();
     }
 
     private void UpdateSummoningSicknessLabel()
@@ -335,13 +374,13 @@ public partial class CardNode : Control
     private void UpdateHealthLabel()
     {
         if (_healthLabel != null)
-            _healthLabel.Text = _health.ToString();
+            _healthLabel.Text = Health.ToString();
     }
 
     private void UpdatePowerLabel()
     {
         if (_powerLabel != null)
-            _powerLabel.Text = _power.ToString();
+            _powerLabel.Text = Power.ToString();
     }
 
     private void UpdateStatLabels()
@@ -394,14 +433,21 @@ public partial class CardNode : Control
 
     private void _UpdateActionButtonsUI()
     {
+        // GD.Print($"Update action buttons UI - {CardName}");
         // Check if playable
         Button playButton = GetNode<Button>("PlayButton");
          if (playButton != null) playButton.Visible = IsPlayable;
                 // TODO - update shield button too
         if (_attackButton != null)
-            _attackButton.Disabled = !IsPlayable;
+            _attackButton.Disabled = !IsPlayable || Power == 0;
         if (_shieldButton != null)
-            _shieldButton.Disabled = !IsPlayable;
+            _shieldButton.Disabled = !IsPlayable || Shield == 0;
+        
+        // Action buttons
+        foreach (var actionButton in ActionButtons)
+        {
+            actionButton.UpdateUI();
+        }
         
         EmitSignal(nameof(TriggerUpdateCardActionButtons));
     }
@@ -422,26 +468,17 @@ public partial class CardNode : Control
 
     public void TriggerAddToScuffle()
     {
-        if (!IsPlayable) return;
-        GD.Print("Trigger add card to scuffle ", CardName);
-        // EmitSignal(SignalName.TriggerAddCardToScuffle, this);
+        TriggerAction(CardActionType.Attack);
     }
 
     public void TriggerShieldAction()
     {
-        if (!IsPlayable) return;
-        // TODO - make general card action function instead of hardcoding each one.
-        GD.Print("Trigger shield action"); 
-        _battleManager.PlayCardAction(new CardActionEventDetails
-        {
-            CardNode = this,
-            ActionType = CardActionType.Shield,
-            TargetsAlly = true
-        });
+        TriggerAction(CardActionType.Shield);
     }
 
     public void TriggerAction(CardActionType actionType)
     {
+        if (!IsPlayable) return;
         // Get action
         CardAction action = Actions.FirstOrDefault(cardAction => cardAction.Type == actionType);
         if (action == null)
@@ -467,37 +504,52 @@ public partial class CardNode : Control
                                   }
                               """;
 
-    public async Task Attack(CardNode cardNode)
+    public async Task<CardAttackDetails> Attack(CardNode cardNode)
     {
+        var cardAttackDetails = new CardAttackDetails
+        {
+            Subject = this,
+            Target = cardNode
+        };
+        
         await PlayAnimationAsync("Attacks");
         // Get damage
-        var damage = Power;
+        var powerValue = GetStatValue(StatName.Power);
         // Assign damage to shield first then health
         // var remainingHealth = card.Health - damage;
         
-        await cardNode.TakeDamage(damage);
+        var damageResults = await cardNode.TakeDamage(powerValue);
+        cardAttackDetails.HealthDamage = damageResults.Health;
+        cardAttackDetails.ShieldDamage = damageResults.Shield;
+        cardAttackDetails.OverkillDamage = damageResults.Overkill;
+        
         _hasActed = true;
         
-        // TODO - battle logging
-        GD.Print($"{CardName} attacks {cardNode.CardName} for {damage} damage. {cardNode.Health} health remaining");
+        GD.Print($"{CardName} attacks {cardNode.CardName} for {powerValue} damage. {cardNode.GetStat(StatName.Health)} health remaining");
+        return cardAttackDetails;
     }
 
-    public async Task TakeDamage(int damage)
+    public Task PlayDeathAnimation()
     {
+        var animationTask = PlayAnimationAsync("Death");
+        return animationTask;
+    }
+
+    public async Task<DamageReport> TakeDamage(int damage)
+    {
+        var damageReport = _stats.TakeDamage(damage);
+        UpdateHealthLabel();
+        UpdateShieldLabel();
+        
+        if (GetParent() == null) // TODO - replace this when card is made visible, otherwise animation can't play so awaits forever
+        {
+            return damageReport;
+        }
+        
         // Play animation
         var animationTask = PlayAnimationAsync("IsAttacked");
-        // Assign damage to shield first then health
-        if (Shield >= damage)
-            Shield -= damage;
-        else if (Shield > 0)
-        {
-            Health -= damage - Shield;
-            Shield = 0;
-        }
-        else
-            Health -= damage;
-
         await animationTask;
+        return damageReport;
     }
 }
 
@@ -528,3 +580,14 @@ public class CardEnterScuffleDetails
     public int PreviousCardsAddedToScuffle;
 }
 
+public class CardAttackDetails
+{
+    public CardNode Subject { get; init; }
+    public CardNode Target { get; init; }
+    public int HealthDamage { get; set; }
+    public int ShieldDamage { get; set; }
+    
+    public int OverkillDamage { get; set; }
+    public int Damage => HealthDamage + ShieldDamage;
+    // Damage type
+}

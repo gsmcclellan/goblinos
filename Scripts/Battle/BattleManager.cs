@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using GoblinCardGame.Scripts;
 using GoblinCardGame.Scripts.Actions;
 using GoblinCardGame.Scripts.Cards;
+using GoblinCardGame.Scripts.Cards.Classes;
+using GoblinCardGame.Scripts.Utilities.Actions;
 using Godot;
 
 namespace GoblinCardGame.Scripts.Battle;
@@ -13,20 +15,31 @@ public partial class BattleManager : Node
 {
     // Signals
     [Signal] public delegate void PlayerActionsRemainingChangedEventHandler(int newValue, int oldValue);
-    [Signal] public delegate void PlayerTurnStartEventHandler(); // TODO - hook this event up 
-    [Signal] public delegate void PlayerTurnEndEventHandler(); // TODO - hook this event up 
-    [Signal] public delegate void ScuffleStartEventHandler(); // TODO - hook this event up 
-    [Signal] public delegate void ScuffleRoundStartEventHandler(int roundNumber); // TODO - hook this event up 
-    [Signal] public delegate void ScuffleRoundEndEventHandler(int roundNumber); // TODO - hook this event up 
-    [Signal] public delegate void ScuffleEndEventHandler(); // TODO - hook this event up 
+    [Signal] public delegate void IsPlayerTurnChangedEventHandler(bool isPlayerTurn);
+    [Signal] public delegate void ScuffleStartEventHandler();
+    [Signal] public delegate void ScuffleRoundStartEventHandler(int roundNumber);
+    [Signal] public delegate void ScuffleRoundEndEventHandler(int roundNumber);
+    [Signal] public delegate void ScuffleEndEventHandler();
+    
+    // Actions
+    public event Action BattleStart;
+    public event Action<CardActionEventDetails> CardActionOccurred;
+    public event Action<CardAttackDetails> CardAttackOccurred;
+    public event Action<CardNode> CardDeathOccurred;
+
+    // event handlers
+    private readonly SubscriptionManager _subscriptionManager = new();
     
     // Export properties
     [Export] public Battle Battle;
     [Export] private string _cardDataJsonPath = "res://data/test_cards.json";
-    
     public BattlePlayer Player;
-    private PackedScene _cardScene = GD.Load<PackedScene>("res://Nodes/Card.tscn");
+    
+    private PackedScene _cardScene = GD.Load<PackedScene>(GlobalSettings.CardNodeScenePath);
+    private PackedScene _battleResultsScene = GD.Load<PackedScene>(GlobalSettings.BattleResultsScreenScenePath);
 
+    private int _actionsRemaining;
+    private bool _isPlayerTurn;
     private int _cardsPlayedThisTurn = 0;
     private int _cardsAddedToScuffleThisTurn;
     private int _battleRound = 0;
@@ -37,14 +50,50 @@ public partial class BattleManager : Node
 
     public bool IsPlayerTurn
     {
-        get => Battle.IsPlayerTurn;
-        private set => Battle.IsPlayerTurn = value;
+        get => _isPlayerTurn;
+        private set
+        {
+            _isPlayerTurn = value;
+            EmitSignal(nameof(IsPlayerTurnChanged), value);
+        }
     }
-    
+
+    public int ActionsRemaining
+    {
+        get => _actionsRemaining;
+        set
+        {
+            var oldValue = _actionsRemaining;
+            _actionsRemaining = value;
+            if (_isPlayerTurn && _actionsRemaining != oldValue)
+                EmitSignal(nameof(PlayerActionsRemainingChanged), _actionsRemaining, oldValue);
+        }
+    }
+
     public int PlayerActionsRemaining
     {
-        get => Battle.PlayerActionsRemaining;
-        private set => Battle.PlayerActionsRemaining = value;
+        get => _isPlayerTurn ? _actionsRemaining : 0;
+        private set
+        {
+            GD.Print("PlayerActionsRemaining: ", PlayerActionsRemaining);
+
+            if (_isPlayerTurn && value != _actionsRemaining)
+            {
+                var oldValue = _actionsRemaining;
+                _actionsRemaining = value;
+                EmitSignal(nameof(PlayerActionsRemainingChanged), value, oldValue);
+            }
+        }
+    }
+
+    public int EnemyActionsRemaining
+    {
+        get => _isPlayerTurn ? 0 : _actionsRemaining;
+        private set
+        {
+            if (!_isPlayerTurn)
+                _actionsRemaining = value;
+        }
     }
 
     public IEnumerable<CardNode> AllCardsInActiveBattle =>
@@ -55,6 +104,16 @@ public partial class BattleManager : Node
     {
         CallDeferred(nameof(_DeferredInit));
         CardManager.LoadData();
+    }
+
+    public override void _ExitTree()
+    {
+        Battle.Scuffle.RemoveAllCards(true);
+        Battle.PlayerHand.RemoveAllCards(true);
+        Battle.EnemyHand.RemoveAllCards(true);
+        Battle.PlayerDeck.Cleanup();
+        _RemoveSubscriptions();
+        base._ExitTree();
     }
 
     private void _DeferredInit()
@@ -74,24 +133,43 @@ public partial class BattleManager : Node
         Battle._Init();
         Battle.UserInterface._Init();
         
-        Player = Battle.Player;
-    }
-    
-    private void OnTreeExiting()
-    {
-        Battle.Scuffle.RemoveAllCards(true);
-        Battle.PlayerHand.RemoveAllCards(true);
-        Battle.EnemyHand.RemoveAllCards(true);
-        Battle.PlayerDeck.Cleanup();
+        // Player = Battle.Player;
     }
 
 
     private void _SetupSubscriptions()
     {
-        //Player.IsPlayerTurnChanged += isPlayerTurn => { EmitSignal(nameof(IsPlayerTurnChanged), isPlayerTurn); };
-        Player.PlayerActionsRemainingChanged += (int newValue, int oldValue) => { EmitSignal(nameof(PlayerActionsRemainingChanged), newValue, oldValue); };
-        Player.PlayerTurnStart += () => { EmitSignal(nameof(PlayerTurnStart)); };
-        Player.PlayerTurnEnd += () => { EmitSignal(nameof(PlayerTurnEnd)); };
+        // Scuffle events
+        Battle.Scuffle.ScuffleEnd += OnScuffleEnd;
+        Battle.Scuffle.ScuffleStart += OnScuffleStart;
+        Battle.Scuffle.ScuffleRoundEnd += OnScuffleRoundEnd;
+        Battle.Scuffle.ScuffleRoundStart += OnScuffleRoundStart;
+        Battle.Scuffle.CardAttackOccurred += OnCardAttackOccurred;
+        Battle.Scuffle.CardDeathOccurred += OnCardDeathOccurred;
+
+        // Player events
+        // Player.IsPlayerTurnChanged += OnIsPlayerTurnChanged;
+        // Player.PlayerActionsRemainingChanged += OnPlayerActionsRemainingChanged;
+        // Player.PlayerTurnEnd += OnPlayerTurnEnd;
+        // Player.PlayerTurnStart += OnPlayerTurnStart;
+    }
+
+    private void _RemoveSubscriptions()
+    {
+        // Scuffle Events
+        Battle.Scuffle.ScuffleEnd -= OnScuffleEnd;
+        Battle.Scuffle.ScuffleStart -= OnScuffleStart;
+        Battle.Scuffle.ScuffleRoundEnd -= OnScuffleRoundEnd;
+        Battle.Scuffle.ScuffleRoundStart -= OnScuffleRoundStart;
+        Battle.Scuffle.CardAttackOccurred -= OnCardAttackOccurred;
+        
+        // Player events
+        // Player.IsPlayerTurnChanged -= OnIsPlayerTurnChanged;
+        // Player.PlayerActionsRemainingChanged -= OnPlayerActionsRemainingChanged;
+        // Player.PlayerTurnEnd -= OnPlayerTurnEnd;
+        // Player.PlayerTurnStart -= OnPlayerTurnStart;
+        
+        _subscriptionManager.Clear();
     }
 
     public CardData CardData(string cardId)
@@ -115,20 +193,29 @@ public partial class BattleManager : Node
         _cardsPlayedThisTurn = 0;
         _cardsAddedToScuffleThisTurn = 0;
         var numCardsToPlay = Math.Min(isFirstTurn ? 1 : GlobalSettings.EnemyActionsPerTurn, Battle.EnemyHand.CardCount);
+        EnemyActionsRemaining = numCardsToPlay;
 
-        for (var i = 0; i < numCardsToPlay; i++)
+        while (EnemyActionsRemaining > 0 && !Battle.EnemyHand.IsEmpty)
         {
+            GD.Print("Enemy Action - add to scuffle");
             if (Battle.EnemyHand.IsEmpty)
                 return;
             
             // Select card to play
-            var card = Battle.EnemyHand.RemoveRandomCard();
-            Battle.Scuffle.AddCard(card);
+            var card = Battle.EnemyHand.SelectRandomCard();
+            card.TriggerAddToScuffle();
+            EnemyActionsRemaining -= 1;
+            // Battle.Scuffle.AddCard(card);
         }
+
+        EnemyActionsRemaining = 0;
     }
 
     public async Task HandlePlayerPassTurn()
     {
+        if (!IsPlayerTurn)
+            throw new Exception("Cannot pass player turn, already not player turn");
+        
         // TODO - if actions remaining, do confirmation
         IsPlayerTurn = false;
         
@@ -146,9 +233,6 @@ public partial class BattleManager : Node
         // TODO - implement way for player to skip straight to combat resolution phase
     }
     
-    
-    
-
     public void DiscardCard(CardNode cardNode)
     {
         CardSlot cardSlot = cardNode.GetParent() as CardSlot;
@@ -175,7 +259,8 @@ public partial class BattleManager : Node
         await Battle.Scuffle.DoBattle();
         
         // Check if battle over, out of all cards, if one side has none battle is over
-        HandleResetBattle();
+        GD.Print("End of battle phase");
+        HandleResetBattleAfterScuffle();
     }
 
     public void DrawCard()
@@ -207,17 +292,42 @@ public partial class BattleManager : Node
         GD.Print("Player goes first: " + playerGoesFirst);
         if (!playerGoesFirst)
             DoEnemyTurn(true);
+
+        BattleStart?.Invoke();
         HandleStartOfPlayerTurn(playerGoesFirst);
     }
 
-    public void HandleEndOfBattle()
+    public void HandleEndOfBattle(bool isVictory)
     {
-        // TODO - end of battle
         GD.Print("Game Over!");
+
+        // instantiate
+        var resultsScreen = _battleResultsScene.Instantiate<BattleResultsScreen>();
+        resultsScreen.IsVictory = isVictory;
+
+        var root = GetTree().Root;
+
+        // capture current scene BEFORE adding the new one
+        var oldScene = GetTree().CurrentScene;
+
+        // add new scene and set it current immediately
+        root.AddChild(resultsScreen);
+        GetTree().CurrentScene = resultsScreen;
+        GD.Print("After set: CurrentScene=", GetTree().CurrentScene, " path=", GetTree().CurrentScene?.GetPath());
+
+        // now remove & free the old scene (if it exists and isn't the same node)
+        if (oldScene != null && oldScene != resultsScreen)
+        {
+            // disconnect any signals on oldScene from elsewhere before freeing it
+            root.RemoveChild(oldScene);
+            oldScene.Free();
+            GD.Print("Freed old scene: ", oldScene);
+        }
     }
 
-    public void HandleResetBattle()
+    public void HandleResetBattleAfterScuffle()
     {
+        GD.Print("Handle reset battle.");
         // Get cards from discard - put them back in player deck or enemy hand
         var allCards = Battle.Scuffle.RemoveAllCards().Concat(Battle.Discard.RemoveAllCards()).ToList();
         var enemyCards = allCards.Where(card => card.IsEnemy).ToList();
@@ -225,7 +335,8 @@ public partial class BattleManager : Node
 
         if (enemyCards.Count == 0 || playerCards.Count == 0)
         {
-            HandleEndOfBattle();
+            var isVictory = playerCards.Count != 0;
+            HandleEndOfBattle(isVictory);
             return;
         }
         
@@ -247,6 +358,8 @@ public partial class BattleManager : Node
         GD.Print("HandleStartOfPlayerTurn");
         // Reset per turn variables
         IsPlayerTurn = true;
+        
+        
         _cardsPlayedThisTurn = 0;
         _cardsAddedToScuffleThisTurn = 0;
         
@@ -256,7 +369,6 @@ public partial class BattleManager : Node
             PlayerActionsRemaining = isFirstTurn ? 1: GlobalSettings.PlayerActionsPerTurn;
         else // Allow player to play rest of cards in hand once enemy has played all
             PlayerActionsRemaining = Battle.PlayerHand.CardCount;
-        GD.Print("PlayerActionsRemaining: ", PlayerActionsRemaining);
     }
 
     public IEnumerable<CardNode> RemoveAllCardsInActiveBattle(bool destroy = false)
@@ -293,5 +405,54 @@ public partial class BattleManager : Node
     private void OnBreakButtonPressed()
     {
         GD.Print("Break here");
+        
+    }
+
+    private void OnCardAttackOccurred(CardAttackDetails details)
+    {
+        CardAttackOccurred?.Invoke(details);
+    }
+
+    private void OnCardDeathOccurred(CardNode cardNode)
+    {
+        CardDeathOccurred?.Invoke(cardNode);
+    }
+    
+    /** Signal handlers */
+    // private void OnIsPlayerTurnChanged(bool isPlayerTurn)
+    // {
+    //     EmitSignal(nameof(IsPlayerTurnChanged), isPlayerTurn);
+    // }
+    // private void OnPlayerActionsRemainingChanged(int newValue, int oldValue)
+    // {
+    //     EmitSignal(nameof(PlayerActionsRemainingChanged), newValue, oldValue);
+    // }
+    // private void OnPlayerTurnEnd()
+    // {
+    //     EmitSignal(nameof(PlayerTurnEnd));
+    // }
+    // private void OnPlayerTurnStart()
+    // {
+    //     EmitSignal(nameof(PlayerTurnStart));
+    // }
+
+    private void OnScuffleEnd()
+    {
+        EmitSignal(nameof(ScuffleEnd));
+    }
+
+    private void OnScuffleRoundEnd(int roundNumber)
+    {
+        EmitSignal(nameof(ScuffleRoundEnd), roundNumber);
+    }
+
+    private void OnScuffleRoundStart(int roundNumber)
+    {
+        EmitSignal(nameof(ScuffleRoundStart), roundNumber);
+    }
+
+    private void OnScuffleStart()
+    {
+        EmitSignal(nameof(ScuffleStart));
     }
 }

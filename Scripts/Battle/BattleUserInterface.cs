@@ -9,6 +9,9 @@ public partial class BattleUserInterface : Control
     private BattleManager _battleManager;
 
     [Export] private Label _playerActionsRemainingValueLabel;
+    [Export] private Button _playerPassTurnButton;
+
+    private bool _CanPlayerPassTurn => _battleManager != null && _battleManager.IsPlayerTurn;
 
     public void _Init()
     {
@@ -21,16 +24,32 @@ public partial class BattleUserInterface : Control
         _battleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
 
         _playerActionsRemainingValueLabel = GetNode<Label>("ActionsRemainingValue");
+        _playerPassTurnButton = GetNode<Button>("PassPlayerTurnButton");
         
         SetPlayerActionsRemainingValueLabel(_battleManager.PlayerActionsRemaining);
     }
 
+    public override void _ExitTree()
+    {
+        base._ExitTree();
+        _RemoveSubscriptions();
+    }
+
     private void _SetupSubscriptions()
     {
-        _battleManager.Connect(
-            "PlayerActionsRemainingChanged",
-            Callable.From<int, int>(OnPlayerActionsRemainingChanged)
-        );
+        _battleManager.PlayerActionsRemainingChanged += OnPlayerActionsRemainingChanged;
+        _battleManager.IsPlayerTurnChanged += OnIsPlayerTurnChanged;
+    }
+
+    private void _RemoveSubscriptions()
+    {
+        _battleManager.PlayerActionsRemainingChanged -= OnPlayerActionsRemainingChanged;
+        _battleManager.IsPlayerTurnChanged -= OnIsPlayerTurnChanged;
+    }
+
+    private void _UpdatePlayerPassTurnButton()
+    {
+        _playerPassTurnButton.Disabled = !_CanPlayerPassTurn;
     }
 
     private void OnPlayerActionsRemainingChanged(int newValue, int oldValue)
@@ -43,6 +62,11 @@ public partial class BattleUserInterface : Control
     {
         if (_playerActionsRemainingValueLabel != null)
             _playerActionsRemainingValueLabel.Text = value.ToString();
+    }
+
+    public void OnIsPlayerTurnChanged(bool isPlayerTurn)
+    {
+        _UpdatePlayerPassTurnButton();
     }
 
     public void OnPlayerPassTurnButtonPressed()

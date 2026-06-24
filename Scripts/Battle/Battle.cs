@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using GoblinCardGame.Scripts.CardContainers;
 using Godot;
@@ -8,8 +9,6 @@ namespace GoblinCardGame.Scripts.Battle;
 public partial class Battle : Node2D
 {
     // Signals
-    [Signal] public delegate void PlayerActionsRemainingChangedEventHandler(int newValue, int oldValue);
-    [Signal] public delegate void IsPlayerTurnChangedEventHandler(int isPlayerTurn);
     
     // Properties
     [Export] private NodePath _battleManagerPath = "BattleManager";
@@ -27,47 +26,31 @@ public partial class Battle : Node2D
     public Deck PlayerDeck;
     public Scuffle Scuffle;
     public CardPile Discard;
-    public BattlePlayer Player;
-
-    public bool IsPlayerTurn
-    {
-        get => Player.IsTurn;
-        set
-        {
-            Player.IsTurn = value;
-        }
-    }
-    public int PlayerActionsRemaining
-    {
-        get => Player.ActionsRemaining;
-        set
-        {
-            int oldValue = Player.ActionsRemaining;
-            Player.ActionsRemaining = value;
-            if (value != oldValue)
-                EmitSignal(nameof(PlayerActionsRemainingChanged), value, oldValue);
-        }
-    }
+    // public BattlePlayer Player;
     
     public override void _Ready()
     {
-        GD.Print("Battle _Ready called");
         var button = GetNode<Button>(_playerDeckPath + "/PlayerDrawButton");
-        GD.Print("PlayerDrawButton found: ", button != null);
 
         // Optional: connect signal manually to verify
-        button.Connect("pressed", new Callable(this, nameof(OnPlayerDrawButtonPressed)));
+        // button.Connect("pressed", new Callable(this, nameof(OnPlayerDrawButtonPressed)));
         
-        BattleManager = GetNode<BattleManager>(GlobalSettings.BattleManagerPath);
-        UserInterface = GetNode<BattleUserInterface>(GlobalSettings.BattleUserInterfacePath);
+        BattleManager = GetNode<BattleManager>("BattleManager");
+        UserInterface = GetNode<BattleUserInterface>("BattleUI");
+        if (BattleManager == null)
+            throw new Exception("Battle Manager not loaded");
+        if (UserInterface == null)
+            throw new Exception("Battle User Interface not loaded");
+        
         PlayerHand = GetNode<CardRow>(_playerHandPath);
         EnemyHand = GetNode<CardRow>(_enemyHandPath);
         PlayerDeck = GetNode<Deck>(_playerDeckPath);
         Scuffle = GetNode<Scuffle>(_scufflePath);
         Discard = GetNode<Discard>(_discardPath);
-        
-        Player = new BattlePlayer();
 
+        if (PlayerHand == null || EnemyHand == null || PlayerDeck == null || Scuffle == null || Discard == null)
+            throw new Exception("Battle components not loaded");
+        
         _SetupSubscriptions();
     }
 

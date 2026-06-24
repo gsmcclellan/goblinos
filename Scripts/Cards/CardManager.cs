@@ -33,7 +33,14 @@ public class CardManager
                 throw new Exception($"Failed to open {CardActionsJsonPath}");
 
             var jsonText = file.GetAsText();
-            _cardActions = JsonSerializer.Deserialize<Dictionary<CardActionType, CardAction>>(jsonText);
+            var options = new JsonSerializerOptions
+            {
+                Converters = {
+                    new JsonStringEnumConverter(), 
+                    new Vector2Converter()
+                }
+            };
+            _cardActions = JsonSerializer.Deserialize<Dictionary<CardActionType, CardAction>>(jsonText, options);
             _isLoaded = true;
         }
 
@@ -45,7 +52,7 @@ public class CardManager
             if (_cardActions.TryGetValue(key, out var value))
             {
                 value.Type = key;
-                return value;
+                return value.Copy();
             }
             else
             {

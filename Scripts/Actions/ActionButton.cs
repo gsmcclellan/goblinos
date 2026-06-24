@@ -31,8 +31,8 @@ public partial class ActionButton : Button
 
     public bool IsAttack => ActionType == CardActionType.Attack;
 
-    public bool IsButtonVisible => _cardNode != null &&  _cardNode.IsInPlayerHand;
-    public bool IsEnabled => _cardNode != null && _cardNode.IsPlayable;
+    public bool IsButtonVisible => _cardNode != null &&  _cardNode.IsInPlayerHand && (CardAction.Stat == null || CardAction.Amount > 0);
+    public bool IsEnabled => _cardNode != null && _cardNode.IsPlayable && (CardAction.Stat == null || CardAction.Amount > 0);
     public override void _Ready()
     {
         _label = GetNode<Label>("Label");
@@ -42,7 +42,7 @@ public partial class ActionButton : Button
         
         Connect("pressed", new Callable(this, nameof(OnPressed)));
 
-        _UpdateUI();
+        UpdateUI();
     }
 
     public void Initialize(CardNode cardNode, CardAction action)
@@ -50,31 +50,39 @@ public partial class ActionButton : Button
         _cardNode = cardNode;
         CardAction = action;
 
-        _UpdateUI();
+        action.AmountChanged += OnAmountChanged;
+
+        UpdateUI();
         ActionButtonPressed += _cardNode.TriggerAction;
-        _cardNode.TriggerUpdateCardActionButtons += _UpdateUI;
+        _cardNode.TriggerUpdateCardActionButtons += UpdateUI;
     }
 
-    public void _UpdateUI()
+    public void UpdateUI()
     {
         if (_cardNode == null)
             return;
-        GD.Print($"Action button {ActionType} update UI - CardNode = {_cardNode.CardName}");
+        // GD.Print($"Action button {ActionType} update UI - CardNode = {_cardNode.CardName}");
         _UpdateLabel();
         Visible = IsButtonVisible;
         Disabled = !IsEnabled;
-        GD.Print($"Visible: {Visible} Enabled: ${IsEnabled} Disabled: {Disabled}");
+        // GD.Print($"Visible: {Visible} Enabled: ${IsEnabled} Disabled: {Disabled}");
     }
 
     private void _UpdateLabel()
     {
         if (_label != null && CardAction != null)
-            _label.Text = CardAction.Text;
+            _label.Text = $"{CardAction.Text} {(CardAction.Amount != 0 ? CardAction.Amount.ToString(): "")}";
     }
 
     private void _UpdateIcon()
     {
         // TODO - set sprite path
+    }
+
+    public void OnAmountChanged(int newValue, int oldValue)
+    {
+        GD.Print($"Action amount changed from {oldValue} to {newValue}");
+        UpdateUI();
     }
 
     public void OnPressed()
@@ -88,7 +96,7 @@ public partial class ActionButton : Button
     {
         if (_cardNode != null)
         {
-            _cardNode.TriggerUpdateCardActionButtons -= _UpdateUI;
+            _cardNode.TriggerUpdateCardActionButtons -= UpdateUI;
             ActionButtonPressed -= _cardNode.TriggerAction;
         }
             
